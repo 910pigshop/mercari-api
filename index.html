@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mercari 代購即時報價助手</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  </style>
+</head>
+<body class="p-4 md:p-8 max-w-2xl mx-auto">
+
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white font-bold text-xl">M</div>
+      <div>
+        <h1 class="text-xl font-bold text-slate-800">Mercari 報價助手</h1>
+        <p class="text-xs text-slate-500">日本代購即時抓取與計算</p>
+      </div>
+    </div>
+
+    <label class="block text-sm font-semibold text-slate-700 mb-2">輸入 Mercari 商品網址（一行一個）</label>
+    <textarea id="urlInput" rows="4" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm mb-4" placeholder="https://jp.mercari.com/item/m12345678901&#10;https://jp.mercari.com/item/m98765432109"></textarea>
+
+    <button onclick="fetchPrices()" id="fetchBtn" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition shadow-sm flex items-center justify-center gap-2">
+      <span>撈取價格資訊</span>
+    </button>
+  </div>
+
+  <!-- 匯率與手續費設定 -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6 grid grid-cols-2 gap-4">
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1">日幣匯率 (JPY → TWD)</label>
+      <input type="number" id="rate" value="0.22" step="0.001" oninput="calculateTotal()" class="w-full p-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-800">
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1">代購費 / 利潤加價 (%)</label>
+      <input type="number" id="feePercent" value="10" step="1" oninput="calculateTotal()" class="w-full p-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-800">
+    </div>
+  </div>
+
+  <!-- 結果清單 -->
+  <div id="resultsList" class="space-y-4 mb-6"></div>
+
+  <!-- 報價總計與複製 -->
+  <div id="summaryCard" class="hidden bg-slate-900 text-white rounded-2xl p-6 shadow-lg">
+    <div class="flex justify-between items-end mb-4 border-b border-slate-800 pb-4">
+      <div>
+        <p class="text-xs text-slate-400">總計預估台幣</p>
+        <p id="totalTwd" class="text-3xl font-extrabold text-emerald-400">NT$ 0</p>
+      </div>
+      <div class="text-right">
+        <p class="text-xs text-slate-400">日幣商品總額</p>
+        <p id="totalJpy" class="text-lg font-semibold">¥0</p>
+      </div>
+    </div>
+    <button onclick="copyQuote()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-xl transition flex items-center justify-center gap-2">
+      複製完整報價文字
+    </button>
+  </div>
+
+  <script>
+    // 你的 Cloudflare Worker API 網址
+    const WORKER_API_URL = "https://mercari-api.910pigshop.workers.dev";
+
+    let fetchedItems = [];
+
+    async function fetchPrices() {
+      const input = document.getElementById("urlInput").value.trim();
+      const urls = input.split("\n").map(u => u.trim()).filter(u => u.startsWith("http"));
+
+      if (urls.length === 0) {
+        alert("請輸入有效的 Mercari 網址！");
+        return;
+      }
+
+      const fetchBtn = document.getElementById("fetchBtn");
+      fetchBtn.disabled = true;
+      fetchBtn.innerHTML = `<span>抓取中...</span>`;
+
+      try {
+        const response = await fetch(WORKER_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ urls })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          fetchedItems = result.data;
+          renderItems();
+          calculateTotal();
+        } else {
+          alert("抓取失敗: " + (result.error || "未知錯誤"));
+        }
+      } catch (err) {
+        alert("連線失敗，請確認 Worker API 網址正確且已 Deploy。");
+      } finally {
+        fetchBtn.disabled = false;
+        fetchBtn.innerHTML = `<span>撈取價格資訊</span>`;
+      }
+    }
+
+    function renderItems() {
+      const list = document.getElementById("resultsList");
+      list.innerHTML = "";
+
+      fetchedItems.forEach((item, index) => {
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative";
+
+        if (!item.success) {
+          card.innerHTML = `<p class="text-red-500 text-sm font-semibold">❌ 抓取失敗 (${item.url})</p>`;
+        } else {
+          const warningBadge = item.isChakubarai 
+            ? `<span class="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">⚠️ 不含送料 (着払い / 買家負擔運費)</span>` 
+            : `<span class="inline-block bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">✅ 送料込み (賣家負擔運費)</span>`;
+
+          card.innerHTML = `
+            ${warningBadge}
+            <h3 class="text-sm font-semibold text-slate-800 mb-2 line-clamp-2">${item.title}</h3>
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-slate-500">日幣價格:</span>
+              <span class="font-bold text-slate-900 text-base">¥${item.price.toLocaleString()}</span>
+            </div>
+          `;
+        }
+        list.appendChild(card);
+      });
+
+      document.getElementById("summaryCard").classList.remove("hidden");
+    }
+
+    function calculateTotal() {
+      const rate = parseFloat(document.getElementById("rate").value) || 0;
+      const feePercent = parseFloat(document.getElementById("feePercent").value) || 0;
+
+      let totalJpy = 0;
+      fetchedItems.forEach(item => {
+        if (item.success && item.price) {
+          totalJpy += item.price;
+        }
+      });
+
+      const totalTwd = Math.round(totalJpy * rate * (1 + feePercent / 100));
+
+      document.getElementById("totalJpy").innerText = `¥${totalJpy.toLocaleString()}`;
+      document.getElementById("totalTwd").innerText = `NT$ ${totalTwd.toLocaleString()}`;
+    }
+
+    function copyQuote() {
+      const rate = document.getElementById("rate").value;
+      const totalTwd = document.getElementById("totalTwd").innerText;
+      
+      let text = `🛒 【Mercari 日本代購報價】\n\n`;
+      fetchedItems.forEach((item, i) => {
+        if (item.success) {
+          text += `${i + 1}. ${item.title}\n`;
+          text += `   價格：¥${item.price.toLocaleString()} JPY\n`;
+          if (item.isChakubarai) {
+            text += `   ⚠️ 提醒：此商品為【着払い】，日本國內運費另計\n`;
+          }
+          text += `\n`;
+        }
+      });
+
+      text += `--------------------\n`;
+      text += `💰 預估總金額：${totalTwd}\n`;
+      text += `(參考匯率: ${rate})\n`;
+      text += `\n有需要歡迎直接回覆下單！`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        alert("報價文字已複製到剪貼簿！");
+      });
+    }
+  </script>
+</body>
+</html>
