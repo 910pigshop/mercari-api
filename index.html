@@ -74,11 +74,11 @@
 
       const fetchBtn = document.getElementById("fetchBtn");
       fetchBtn.disabled = true;
-      fetchBtn.innerHTML = `<span>撈取中，請稍候...</span>`;
+      fetchBtn.innerHTML = `<span>解析中...</span>`;
 
       fetchedItems = [];
       for (const url of urls) {
-        const itemData = await parseMercariDirect(url);
+        const itemData = await parseItem(url);
         fetchedItems.push(itemData);
       }
 
@@ -89,55 +89,57 @@
       fetchBtn.innerHTML = `<span>撈取價格資訊</span>`;
     }
 
-    async function parseMercariDirect(url) {
+    async function parseItem(url) {
       const match = url.match(/m\d+/);
       const itemId = match ? match[0] : null;
 
-      if (!itemId) {
-        return { url, success: false, error: "無效網址" };
-      }
+      if (!itemId) return { url, success: false, error: "網址格式不正確" };
 
-      let html = "";
+      // 嘗試透過幾組跨國 CORS 節點取得 Mercari API 資料
+      const proxyList = [
+        `https://api.allorigins.win/get?url=${encodeURIComponent('https://jp.mercari.com/item/' + itemId)}`,
+        `https://thingproxy.freeboard.io/fetch/https://jp.mercari.com/item/${itemId}`
+      ];
 
-      // 嘗試代理通道 1: CorsProxy
-      try {
-        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://jp.mercari.com/item/' + itemId)}`);
-        if (res.ok) html = await res.text();
-      } catch (e) {}
-
-      // 嘗試代理通道 2: AllOrigins (備用)
-      if (!html) {
+      for (const proxy of proxyList) {
         try {
-          const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://jp.mercari.com/item/' + itemId)}`);
-          if (res.ok) {
+          const res = await fetch(proxy);
+          if (!res.ok) continue;
+
+          let html = "";
+          if (proxy.includes("allorigins")) {
             const data = await res.json();
             html = data.contents || "";
+          } else {
+            html = await res.text();
+          }
+
+          if (html) {
+            const parsed = extractFromHtml(html, itemId, url);
+            if (parsed.success) return parsed;
           }
         } catch (e) {}
       }
 
-      if (!html) {
-        return { url, itemId, success: false, error: "抓取失敗，請確認網路或商品狀態" };
-      }
+      return { url, itemId, success: false };
+    }
 
+    function extractFromHtml(html, itemId, url) {
       let price = 0;
       let title = `Mercari 商品 (${itemId})`;
       let isChakubarai = false;
 
-      // 1. 精準解析 __NEXT_DATA__ JSON 結構
+      // 1. 從 JSON 數據解析
       const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s);
       if (nextDataMatch) {
         try {
           const json = JSON.parse(nextDataMatch[1]);
           const item = json?.props?.pageProps?.item || json?.props?.pageProps?.initialState?.item?.item;
-
           if (item) {
             price = parseInt(item.price || 0, 10);
             title = item.name || title;
 
-            // Mercari 官方定義：
-            // 1 = 送料込み (賣家負擔 / 含運費)
-            // 2 = 着払い (買家負擔 / 不含運費)
+            // Mercari 官方定義：1 為送料込み (賣家付), 2 為着払い (買家付)
             const payerId = item.itemShippingPayer?.id || item.shippingPayerId || item.shipping_payer_id || item.item_shipping_payer?.id;
             if (payerId !== undefined && payerId !== null) {
               isChakubarai = (Number(payerId) === 2);
@@ -148,47 +150,49 @@
         } catch (e) {}
       }
 
-      // 2. 備用正則抓取金額
+      // 2. 正則備用解析價格
       if (!price) {
-        const priceMatch = html.match(/property="product:price:amount"\s+content="(\d+)"/i) ||
-                          html.match(/content="(\d+)"\s+property="product:price:amount"/i) ||
-                          html.match(/"price":\s*"?(\d+)"?/);
-        if (priceMatch && priceMatch[1]) price = parseInt(priceMatch[1], 10);
+        const priceMatch = html.match(/property="product:price:amount"\s+content="(\d+)"/i) || html.match(/"price":\s*"?(\d+)"?/);
+        if (priceMatch) price = parseInt(priceMatch[1], 10);
       }
 
-      // 3. 備用正則抓取品名
+      // 3. 正則備用解析品名
       if (title.startsWith("Mercari 商品")) {
         const titleMatch = html.match(/property="og:title"\s+content="([^"]+)"/i) || html.match(/<title>([^<]+)<\/title>/i);
-        if (titleMatch && titleMatch[1]) {
-          title = titleMatch[1].replace("- メルカリ", "").replace("by メルカリ", "").trim();
-        }
+        if (titleMatch) title = titleMatch[1].replace("- メルカリ", "").replace("by メルカリ", "").trim();
       }
 
-      // 4. 備用運費判斷
-      if (!nextDataMatch && !isChakubarai) {
-        isChakubarai = /"shippingPayerId":\s*2/.test(html) || /"shipping_payer_id":\s*2/.test(html) || html.includes('配送料の負担":"着払い');
-      }
+      return { url, itemId, success: price > 0, title, price, isChakubarai };
+    }
 
-      return {
-        url,
-        itemId,
-        success: price > 0,
-        title,
-        price,
-        isChakubarai
-      };
+    function handleManualInput(index) {
+      const input = prompt("網路阻擋中，請貼上此商品的日幣價格與名稱（或貼上商品頁複製的文字）：");
+      if (!input) return;
+
+      const priceMatch = input.match(/\d+/);
+      if (priceMatch) {
+        fetchedItems[index].price = parseInt(priceMatch[0], 10);
+        fetchedItems[index].success = true;
+        fetchedItems[index].isChakubarai = input.includes("着払い") || input.includes("購入者負担");
+        renderItems();
+        calculateTotal();
+      }
     }
 
     function renderItems() {
       const list = document.getElementById("resultsList");
       list.innerHTML = "";
 
-      fetchedItems.forEach((item) => {
+      fetchedItems.forEach((item, index) => {
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative";
 
         if (!item.success) {
-          card.innerHTML = `<p class="text-red-500 text-sm font-semibold">❌ 抓取失敗 (${item.url})</p>`;
+          card.innerHTML = `
+            <div class="flex justify-between items-center">
+              <p class="text-red-500 text-sm font-semibold">❌ 抓取失敗 (${item.itemId})</p>
+              <button onclick="handleManualInput(${index})" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-semibold transition">手動填寫數字</button>
+            </div>`;
         } else {
           const warningBadge = item.isChakubarai 
             ? `<span class="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">⚠️ 不含送料 (着払い / 買家負擔運費)</span>` 
