@@ -6,63 +6,172 @@
   <title>Mercari 報價助手</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding-bottom: 80px; }
   </style>
 </head>
 <body class="p-4 md:p-8 max-w-2xl mx-auto">
 
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-    <div class="flex items-center gap-3 mb-4">
-      <div class="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white font-bold text-xl">M</div>
-      <div>
-        <h1 class="text-xl font-bold text-slate-800">Mercari 報價助手</h1>
-        <p class="text-xs text-slate-500">日本/台灣代購即時抓取與計算</p>
+  <!-- ==================== 分頁一：報價助手 ==================== -->
+  <div id="tab1" class="tab-content">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white font-bold text-xl">M</div>
+        <div>
+          <h1 class="text-xl font-bold text-slate-800">Mercari 報價助手</h1>
+          <p class="text-xs text-slate-500">日本/台灣代購即時抓取與計算</p>
+        </div>
       </div>
+
+      <label class="block text-sm font-semibold text-slate-700 mb-2">直接貼上客人的對話訊息（自動識別台/日煤爐網址）</label>
+      <textarea id="urlInput" rows="5" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm mb-4" placeholder="貼上含有網址的對話訊息..."></textarea>
+
+      <button onclick="fetchPrices()" id="fetchBtn" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition shadow-sm flex items-center justify-center gap-2">
+        <span>自動辨識網址並報價</span>
+      </button>
     </div>
 
-    <label class="block text-sm font-semibold text-slate-700 mb-2">直接貼上客人的對話訊息（自動識別台/日煤爐網址）</label>
-    <textarea id="urlInput" rows="5" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm mb-4" placeholder="貼上含有網址的對話訊息..."></textarea>
+    <!-- 結果清單 -->
+    <div id="resultsList" class="space-y-4 mb-6"></div>
 
-    <button onclick="fetchPrices()" id="fetchBtn" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition shadow-sm flex items-center justify-center gap-2">
-      <span>自動辨識網址並報價</span>
+    <!-- 報價總計與複製 -->
+    <div id="summaryCard" class="hidden bg-slate-900 text-white rounded-2xl p-6 shadow-lg mb-6">
+      <div class="flex justify-between items-end mb-4 border-b border-slate-800 pb-4">
+        <div>
+          <p class="text-xs text-slate-400">總計預估台幣 (已套用 0/5 進位)</p>
+          <p id="totalTwd" class="text-3xl font-extrabold text-emerald-400">NT$ 0</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-slate-400">日幣商品總額</p>
+          <p id="totalJpy" class="text-lg font-semibold">¥0</p>
+        </div>
+      </div>
+      <button onclick="copyQuote()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-xl transition flex items-center justify-center gap-2">
+        複製完整報價文字
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 分頁二：系統設定 ==================== -->
+  <div id="tab2" class="tab-content hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+      <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">⚙️ 匯率與費用設定</h2>
+      
+      <div class="space-y-4">
+        <!-- 國際即時匯率 -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-slate-500">國際即時匯率 (日幣 → 台幣)</p>
+            <p id="realtimeRateDisplay" class="text-sm font-bold text-slate-800 mt-0.5">抓取中...</p>
+          </div>
+          <button onclick="fetchRealtimeRate()" class="text-xs text-red-500 hover:text-red-600 font-semibold underline">重新整理</button>
+        </div>
+
+        <!-- 設定匯率 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">設定匯率 (手動輸入，預設 0.22)</label>
+          <input type="number" id="rate" value="0.22" step="0.001" oninput="saveAndCalculate()" class="w-full p-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none">
+        </div>
+
+        <!-- 代購費率 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">代購費率 (%) (手動輸入，預設 17.5%)</label>
+          <input type="number" id="feePercent" value="17.5" step="0.1" oninput="saveAndCalculate()" class="w-full p-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none">
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-4">* 修改後會自動儲存設定，下次開啟網頁無需重複輸入。</p>
+    </div>
+  </div>
+
+  <!-- ==================== 底部固定切換導覽列 ==================== -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-2 flex justify-around items-center z-50">
+    <button onclick="switchTab(1)" id="tabBtn1" class="flex flex-col items-center text-red-500 font-bold">
+      <span class="text-xl">🛒</span>
+      <span class="text-xs">報價計算</span>
     </button>
-  </div>
-
-  <!-- 匯率與手續費設定 -->
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6 grid grid-cols-2 gap-4">
-    <div>
-      <label class="block text-xs font-semibold text-slate-600 mb-1">日幣匯率 (JPY → TWD)</label>
-      <input type="number" id="rate" value="0.22" step="0.001" oninput="calculateTotal()" class="w-full p-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-800">
-    </div>
-    <div>
-      <label class="block text-xs font-semibold text-slate-600 mb-1">代購費 / 利潤加價 (%)</label>
-      <input type="number" id="feePercent" value="10" step="1" oninput="calculateTotal()" class="w-full p-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-800">
-    </div>
-  </div>
-
-  <!-- 結果清單 -->
-  <div id="resultsList" class="space-y-4 mb-6"></div>
-
-  <!-- 報價總計與複製 -->
-  <div id="summaryCard" class="hidden bg-slate-900 text-white rounded-2xl p-6 shadow-lg">
-    <div class="flex justify-between items-end mb-4 border-b border-slate-800 pb-4">
-      <div>
-        <p class="text-xs text-slate-400">總計預估台幣</p>
-        <p id="totalTwd" class="text-3xl font-extrabold text-emerald-400">NT$ 0</p>
-      </div>
-      <div class="text-right">
-        <p class="text-xs text-slate-400">日幣商品總額</p>
-        <p id="totalJpy" class="text-lg font-semibold">¥0</p>
-      </div>
-    </div>
-    <button onclick="copyQuote()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-xl transition flex items-center justify-center gap-2">
-      複製完整報價文字
+    <button onclick="switchTab(2)" id="tabBtn2" class="flex flex-col items-center text-slate-400 font-medium">
+      <span class="text-xl">⚙️</span>
+      <span class="text-xs">系統設定</span>
     </button>
   </div>
 
   <script>
     const WORKER_API_URL = "https://mercari-api.910pigshop.workers.dev";
     let fetchedItems = [];
+
+    // 初始化：載入歷史設定與抓取即時匯率
+    window.addEventListener("DOMContentLoaded", () => {
+      loadSettings();
+      fetchRealtimeRate();
+    });
+
+    // 分頁切換邏輯
+    function switchTab(tabNum) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`tab${tabNum}`).classList.remove('hidden');
+
+      const btn1 = document.getElementById('tabBtn1');
+      const btn2 = document.getElementById('tabBtn2');
+
+      if (tabNum === 1) {
+        btn1.className = "flex flex-col items-center text-red-500 font-bold";
+        btn2.className = "flex flex-col items-center text-slate-400 font-medium";
+      } else {
+        btn1.className = "flex flex-col items-center text-slate-400 font-medium";
+        btn2.className = "flex flex-col items-center text-red-500 font-bold";
+      }
+    }
+
+    // 載入與儲存記憶
+    function loadSettings() {
+      const savedRate = localStorage.getItem("mercari_rate");
+      const savedFee = localStorage.getItem("mercari_fee");
+
+      if (savedRate !== null) document.getElementById("rate").value = savedRate;
+      if (savedFee !== null) document.getElementById("feePercent").value = savedFee;
+    }
+
+    function saveAndCalculate() {
+      const rate = document.getElementById("rate").value;
+      const fee = document.getElementById("feePercent").value;
+
+      localStorage.setItem("mercari_rate", rate);
+      localStorage.setItem("mercari_fee", fee);
+
+      calculateTotal();
+    }
+
+    // 抓取當天國際即時匯率
+    async function fetchRealtimeRate() {
+      const display = document.getElementById("realtimeRateDisplay");
+      display.innerText = "讀取中...";
+      try {
+        const res = await fetch("https://open.er-api.com/v6/latest/JPY");
+        if (res.ok) {
+          const data = await res.json();
+          const twdRate = data?.rates?.TWD;
+          if (twdRate) {
+            display.innerText = `1 JPY ≈ ${twdRate.toFixed(4)} TWD`;
+            return;
+          }
+        }
+        display.innerText = "無法取得即時匯率";
+      } catch (e) {
+        display.innerText = "無法取得即時匯率";
+      }
+    }
+
+    // 特殊進位邏輯 (個位數 1-4 -> 5, 6-9 -> 0, 0/5不變)
+    function adjustRoundPrice(val) {
+      let rounded = Math.round(val);
+      let lastDigit = rounded % 10;
+
+      if (lastDigit >= 1 && lastDigit <= 4) {
+        return rounded + (5 - lastDigit);
+      } else if (lastDigit >= 6 && lastDigit <= 9) {
+        return rounded + (10 - lastDigit);
+      }
+      return rounded;
+    }
 
     async function fetchPrices() {
       const rawText = document.getElementById("urlInput").value.trim();
@@ -110,7 +219,6 @@
         card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative";
 
         if (!item.success) {
-          // 手動輸入區塊 (針對無法自動轉換的商城/UUID商品)
           card.innerHTML = `
             <div class="mb-2">
               <span class="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-md">⚠️ 請手動確認商品金額及內容</span>
@@ -176,10 +284,13 @@
         }
       });
 
-      const totalTwd = Math.round(totalJpy * rate * (1 + feePercent / 100));
+      // 原始預估金額
+      const rawTwd = totalJpy * rate * (1 + feePercent / 100);
+      // 特殊進位邏輯 (1-4 -> 5, 6-9 -> 0)
+      const adjustedTwd = adjustRoundPrice(rawTwd);
 
       document.getElementById("totalJpy").innerText = `¥${totalJpy.toLocaleString()}`;
-      document.getElementById("totalTwd").innerText = `NT$ ${totalTwd.toLocaleString()}`;
+      document.getElementById("totalTwd").innerText = `NT$ ${adjustedTwd.toLocaleString()}`;
     }
 
     function copyQuote() {
