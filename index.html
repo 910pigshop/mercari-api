@@ -245,17 +245,34 @@
         card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative";
 
         if (!item.success && !item.isManual) {
+          const singleTwd = calculateSingleTwd(item.price);
+          
           card.innerHTML = `
             <div class="mb-2">
               <span class="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-md">⚠️ 請手動確認商品金額及內容</span>
             </div>
-            <p class="text-xs text-slate-500 mb-2 truncate">原網址: <a href="${item.originalUrl || item.url}" target="_blank" class="text-red-500 hover:underline">${item.originalUrl || item.url}</a></p>
-            <div class="flex items-center gap-3">
-              <label class="text-xs font-semibold text-slate-700 whitespace-nowrap">手動填寫日幣價格:</label>
-              <div class="relative flex-1">
-                <span class="absolute left-3 top-2.5 text-slate-400 text-sm">¥</span>
-                <input type="number" placeholder="輸入金額" oninput="updateManualPrice(${index}, this.value)" class="w-full pl-7 pr-3 py-2 text-sm font-bold rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800">
+            <p class="text-xs text-slate-500 mb-3 truncate">原網址: <a href="${item.originalUrl || item.url}" target="_blank" class="text-red-500 hover:underline">${item.originalUrl || item.url}</a></p>
+            
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <label class="text-xs font-semibold text-slate-700 whitespace-nowrap min-w-[120px]">手動填寫日幣價格:</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-3 top-2.5 text-slate-400 text-sm">¥</span>
+                  <input type="number" value="${item.price || ''}" placeholder="輸入金額" oninput="updateManualPrice(${index}, this.value)" class="w-full pl-7 pr-3 py-2 text-sm font-bold rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800">
+                </div>
               </div>
+
+              <div class="flex items-center gap-3">
+                <label class="text-xs font-semibold text-slate-700 whitespace-nowrap min-w-[120px]">手動日本頁面網址:</label>
+                <input type="url" value="${item.manualJpUrl || ''}" placeholder="https://jp.mercari.com/item/m..." oninput="updateManualUrl(${index}, this.value)" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800">
+              </div>
+
+              ${item.price && item.price > 0 ? `
+              <div class="flex justify-between items-center text-sm pt-1 border-t border-slate-100">
+                <span class="text-slate-500 text-xs">預估台幣:</span>
+                <span class="font-bold text-emerald-600 text-sm">NT$ ${singleTwd.toLocaleString()}</span>
+              </div>
+              ` : ''}
             </div>
           `;
         } else {
@@ -268,6 +285,7 @@
             : `<span class="inline-block bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">✅ 送料込み (賣家負擔運費)</span>`;
 
           const singleTwd = calculateSingleTwd(item.price);
+          const displayJpUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url;
 
           card.innerHTML = `
             <div>
@@ -291,7 +309,7 @@
 
             <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-500">
               <span>日本頁面網址:</span>
-              <a href="${item.jpUrl || item.originalUrl || item.url}" target="_blank" class="text-red-500 hover:text-red-600 font-medium truncate max-w-[300px] hover:underline">${item.jpUrl || item.originalUrl || item.url}</a>
+              <a href="${displayJpUrl}" target="_blank" class="text-red-500 hover:text-red-600 font-medium truncate max-w-[300px] hover:underline">${displayJpUrl}</a>
             </div>
           `;
         }
@@ -311,6 +329,10 @@
       }
       renderItems();
       calculateTotal();
+    }
+
+    function updateManualUrl(index, val) {
+      fetchedItems[index].manualJpUrl = val.trim();
     }
 
     function calculateTotal() {
@@ -344,7 +366,7 @@
         if (item.success || (item.isManual && item.price > 0)) {
           validCount++;
           const title = item.title || `手動確認商品 (${i + 1})`;
-          const displayUrl = item.jpUrl || item.originalUrl || item.url;
+          const displayUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url;
           const singleTwd = calculateSingleTwd(item.price);
 
           text += `${validCount}. ${title}\n`;
