@@ -64,35 +64,6 @@
     const WORKER_API_URL = "https://mercari-api.910pigshop.workers.dev";
     let fetchedItems = [];
 
-    // 透過前端代理伺服器解析台灣網址中的原始日本 ID
-    async function convertTaiwanUrlToJp(url) {
-      if (!url.includes("tw.mercari.com") && !url.includes("/items/")) {
-        return { originalUrl: url, jpUrl: url, isTaiwanUrl: false };
-      }
-
-      try {
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-        const res = await fetch(proxyUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const html = data.contents || "";
-
-          // 抓取頁面中對應的日本 m+數字 ID 或商城 ID
-          const matchJp = html.match(/jp\.mercari\.com\/item\/(m\d+)/) || html.match(/"itemId":\s*"(m\d+)"/) || html.match(/(m\d{10,})/);
-          const matchShop = html.match(/mercari-shops\.com\/products\/([a-zA-Z0-9]+)/);
-
-          if (matchJp && matchJp[1]) {
-            return { originalUrl: url, jpUrl: `https://jp.mercari.com/item/${matchJp[1]}`, isTaiwanUrl: true };
-          } else if (matchShop && matchShop[1]) {
-            return { originalUrl: url, jpUrl: `https://mercari-shops.com/products/${matchShop[1]}`, isTaiwanUrl: true, isShop: true };
-          }
-        }
-      } catch (e) {}
-
-      // 如果抓取失敗，回傳備用解析
-      return { originalUrl: url, jpUrl: url, isTaiwanUrl: true };
-    }
-
     async function fetchPrices() {
       const rawText = document.getElementById("urlInput").value.trim();
       const urlMatches = rawText.match(/https?:\/\/[^\s\n]*mercari[^\s\n]*/gi);
@@ -102,33 +73,21 @@
         return;
       }
 
-      const rawUrls = [...new Set(urlMatches.map(u => u.trim()))];
+      const urls = [...new Set(urlMatches.map(u => u.trim()))];
       const fetchBtn = document.getElementById("fetchBtn");
       fetchBtn.disabled = true;
-      fetchBtn.innerHTML = `<span>正在轉換台灣網址並辨識中...</span>`;
-
-      // 1. 前端先行把台灣網址轉換成日本網址
-      const convertedList = await Promise.all(rawUrls.map(u => convertTaiwanUrlToJp(u)));
-      const requestPayload = convertedList.map(item => item.jpUrl);
-
-      fetchBtn.innerHTML = `<span>已辨識 ${requestPayload.length} 個商品，價格撈取中...</span>`;
+      fetchBtn.innerHTML = `<span>已識別 ${urls.length} 個網址，解析中...</span>`;
 
       try {
         const response = await fetch(WORKER_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ urls: requestPayload })
+          body: JSON.stringify({ urls })
         });
 
         const result = await response.json();
         if (result.success) {
-          // 組合台灣標籤與日本網址資訊
-          fetchedItems = result.data.map((item, index) => ({
-            ...item,
-            originalUrl: convertedList[index].originalUrl,
-            isTaiwanUrl: convertedList[index].isTaiwanUrl,
-            jpUrl: item.url || convertedList[index].jpUrl
-          }));
+          fetchedItems = result.data;
           renderItems();
           calculateTotal();
         } else {
