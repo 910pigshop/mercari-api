@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mercari 代購即時報價助手</title>
+  <title>Mercari 報價助手</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -21,7 +21,7 @@
     </div>
 
     <label class="block text-sm font-semibold text-slate-700 mb-2">輸入 Mercari 商品網址（一行一個）</label>
-    <textarea id="urlInput" rows="4" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm mb-4" placeholder="https://jp.mercari.com/item/m12345678901&#10;https://jp.mercari.com/item/m98765432109"></textarea>
+    <textarea id="urlInput" rows="4" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm mb-4" placeholder="https://jp.mercari.com/item/m83895663202&#10;https://jp.mercari.com/item/m55731070337&#10;https://jp.mercari.com/item/m34398942530"></textarea>
 
     <button onclick="fetchPrices()" id="fetchBtn" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition shadow-sm flex items-center justify-center gap-2">
       <span>撈取價格資訊</span>
@@ -61,9 +61,6 @@
   </div>
 
   <script>
-    // 你的 Cloudflare Worker API 網址
-    const WORKER_API_URL = "https://mercari-api.910pigshop.workers.dev";
-
     let fetchedItems = [];
 
     async function fetchPrices() {
@@ -77,37 +74,116 @@
 
       const fetchBtn = document.getElementById("fetchBtn");
       fetchBtn.disabled = true;
-      fetchBtn.innerHTML = `<span>抓取中...</span>`;
+      fetchBtn.innerHTML = `<span>撈取中，請稍候...</span>`;
 
-      try {
-        const response = await fetch(WORKER_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ urls })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          fetchedItems = result.data;
-          renderItems();
-          calculateTotal();
-        } else {
-          alert("抓取失敗: " + (result.error || "未知錯誤"));
-        }
-      } catch (err) {
-        alert("連線失敗，請確認 Worker API 網址正確且已 Deploy。");
-      } finally {
-        fetchBtn.disabled = false;
-        fetchBtn.innerHTML = `<span>撈取價格資訊</span>`;
+      fetchedItems = [];
+      for (const url of urls) {
+        const itemData = await parseMercariDirect(url);
+        fetchedItems.push(itemData);
       }
+
+      renderItems();
+      calculateTotal();
+
+      fetchBtn.disabled = false;
+      fetchBtn.innerHTML = `<span>撈取價格資訊</span>`;
+    }
+
+    async function parseMercariDirect(url) {
+      const match = url.match(/m\d+/);
+      const itemId = match ? match[0] : null;
+
+      if (!itemId) {
+        return { url, success: false, error: "無效網址" };
+      }
+
+      let html = "";
+
+      // 嘗試代理通道 1: CorsProxy
+      try {
+        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://jp.mercari.com/item/' + itemId)}`);
+        if (res.ok) html = await res.text();
+      } catch (e) {}
+
+      // 嘗試代理通道 2: AllOrigins (備用)
+      if (!html) {
+        try {
+          const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://jp.mercari.com/item/' + itemId)}`);
+          if (res.ok) {
+            const data = await res.json();
+            html = data.contents || "";
+          }
+        } catch (e) {}
+      }
+
+      if (!html) {
+        return { url, itemId, success: false, error: "抓取失敗，請確認網路或商品狀態" };
+      }
+
+      let price = 0;
+      let title = `Mercari 商品 (${itemId})`;
+      let isChakubarai = false;
+
+      // 1. 精準解析 __NEXT_DATA__ JSON 結構
+      const nextDataMatch = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s);
+      if (nextDataMatch) {
+        try {
+          const json = JSON.parse(nextDataMatch[1]);
+          const item = json?.props?.pageProps?.item || json?.props?.pageProps?.initialState?.item?.item;
+
+          if (item) {
+            price = parseInt(item.price || 0, 10);
+            title = item.name || title;
+
+            // Mercari 官方定義：
+            // 1 = 送料込み (賣家負擔 / 含運費)
+            // 2 = 着払い (買家負擔 / 不含運費)
+            const payerId = item.itemShippingPayer?.id || item.shippingPayerId || item.shipping_payer_id || item.item_shipping_payer?.id;
+            if (payerId !== undefined && payerId !== null) {
+              isChakubarai = (Number(payerId) === 2);
+            } else if (item.itemShippingPayer?.name) {
+              isChakubarai = item.itemShippingPayer.name.includes("着払い") || item.itemShippingPayer.name.includes("購入者負担");
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 2. 備用正則抓取金額
+      if (!price) {
+        const priceMatch = html.match(/property="product:price:amount"\s+content="(\d+)"/i) ||
+                          html.match(/content="(\d+)"\s+property="product:price:amount"/i) ||
+                          html.match(/"price":\s*"?(\d+)"?/);
+        if (priceMatch && priceMatch[1]) price = parseInt(priceMatch[1], 10);
+      }
+
+      // 3. 備用正則抓取品名
+      if (title.startsWith("Mercari 商品")) {
+        const titleMatch = html.match(/property="og:title"\s+content="([^"]+)"/i) || html.match(/<title>([^<]+)<\/title>/i);
+        if (titleMatch && titleMatch[1]) {
+          title = titleMatch[1].replace("- メルカリ", "").replace("by メルカリ", "").trim();
+        }
+      }
+
+      // 4. 備用運費判斷
+      if (!nextDataMatch && !isChakubarai) {
+        isChakubarai = /"shippingPayerId":\s*2/.test(html) || /"shipping_payer_id":\s*2/.test(html) || html.includes('配送料の負担":"着払い');
+      }
+
+      return {
+        url,
+        itemId,
+        success: price > 0,
+        title,
+        price,
+        isChakubarai
+      };
     }
 
     function renderItems() {
       const list = document.getElementById("resultsList");
       list.innerHTML = "";
 
-      fetchedItems.forEach((item, index) => {
+      fetchedItems.forEach((item) => {
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative";
 
