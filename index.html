@@ -64,6 +64,43 @@
     const WORKER_API_URL = "https://mercari-api.910pigshop.workers.dev";
     let fetchedItems = [];
 
+    // 前端對台灣 UUID 網址進行實時轉譯
+    async function resolveTaiwanUrl(url) {
+      if (!url.includes("tw.mercari.com") && !url.includes("/items/")) {
+        return { originalUrl: url, jpUrl: url, isTaiwanUrl: false };
+      }
+
+      let html = "";
+      try {
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        if (res.ok) {
+          const data = await res.json();
+          html = data.contents || "";
+        }
+      } catch (e) {}
+
+      if (!html) {
+        try {
+          const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+          if (res.ok) html = await res.text();
+        } catch (e) {}
+      }
+
+      if (html) {
+        // 從台灣頁面的 HTML 找出對應日本 m+數字 或 shops ID
+        const matchJp = html.match(/jp\.mercari\.com\/item\/(m\d+)/) || html.match(/"itemId":\s*"(m\d+)"/) || html.match(/"id":\s*"(m\d+)"/);
+        const matchShop = html.match(/mercari-shops\.com\/products\/([a-zA-Z0-9]+)/) || html.match(/shops\/product\/([a-zA-Z0-9]+)/);
+
+        if (matchJp && matchJp[1]) {
+          return { originalUrl: url, jpUrl: `https://jp.mercari.com/item/${matchJp[1]}`, isTaiwanUrl: true };
+        } else if (matchShop && matchShop[1]) {
+          return { originalUrl: url, jpUrl: `https://mercari-shops.com/products/${matchShop[1]}`, isTaiwanUrl: true, isShop: true };
+        }
+      }
+
+      return { originalUrl: url, jpUrl: url, isTaiwanUrl: true };
+    }
+
     async function fetchPrices() {
       const rawText = document.getElementById("urlInput").value.trim();
       const urlMatches = rawText.match(/https?:\/\/[^\s\n]*mercari[^\s\n]*/gi);
@@ -76,18 +113,28 @@
       const urls = [...new Set(urlMatches.map(u => u.trim()))];
       const fetchBtn = document.getElementById("fetchBtn");
       fetchBtn.disabled = true;
-      fetchBtn.innerHTML = `<span>已識別 ${urls.length} 個網址，解析中...</span>`;
+
+      fetchBtn.innerHTML = `<span>正在轉譯台灣煤爐網址...</span>`;
+      const resolvedList = await Promise.all(urls.map(u => resolveTaiwanUrl(u)));
+
+      const payloadUrls = resolvedList.map(r => r.jpUrl);
+      fetchBtn.innerHTML = `<span>已辨識 ${payloadUrls.length} 個商品，價格撈取中...</span>`;
 
       try {
         const response = await fetch(WORKER_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ urls })
+          body: JSON.stringify({ urls: payloadUrls })
         });
 
         const result = await response.json();
         if (result.success) {
-          fetchedItems = result.data;
+          fetchedItems = result.data.map((item, index) => ({
+            ...item,
+            originalUrl: resolvedList[index].originalUrl,
+            isTaiwanUrl: resolvedList[index].isTaiwanUrl,
+            jpUrl: item.url || resolvedList[index].jpUrl
+          }));
           renderItems();
           calculateTotal();
         } else {
