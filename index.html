@@ -16,12 +16,12 @@
       <div class="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white font-bold text-xl">M</div>
       <div>
         <h1 class="text-xl font-bold text-slate-800">Mercari 報價助手</h1>
-        <p class="text-xs text-slate-500">日本代購即時抓取與計算</p>
+        <p class="text-xs text-slate-500">日本代購即時抓取與計算 (支援台灣/日本煤爐網址)</p>
       </div>
     </div>
 
-    <label class="block text-sm font-semibold text-slate-700 mb-2">直接貼上客人的對話訊息或網址（自動過濾雜訊）</label>
-    <textarea id="urlInput" rows="5" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm mb-4" placeholder="例如直接貼上：&#10;您好想請您代切煤爐～&#10;1. https://jp.mercari.com/item/m80141721215&#10;2. https://jp.mercari.com/item/m14305945073&#10;謝謝！"></textarea>
+    <label class="block text-sm font-semibold text-slate-700 mb-2">直接貼上客人的對話訊息（支援台/日煤爐網址自動轉換）</label>
+    <textarea id="urlInput" rows="5" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm mb-4" placeholder="例如直接貼上台/日煤爐訊息：&#10;您好想請您代切煤爐～&#10;1. https://jp.mercari.com/zh-hant/item/m80141721215&#10;2. https://jp.mercari.com/item/m14305945073&#10;謝謝！"></textarea>
 
     <button onclick="fetchPrices()" id="fetchBtn" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition shadow-sm flex items-center justify-center gap-2">
       <span>自動辨識網址並報價</span>
@@ -67,16 +67,17 @@
     async function fetchPrices() {
       const rawText = document.getElementById("urlInput").value.trim();
 
-      // 正規表示式：抓出所有 Mercari 的商品網址（包含以 https://jp.mercari.com/item/m... 開頭的網址）
-      const urlMatches = rawText.match(/https?:\/\/(?:jp\.)?mercari\.com\/item\/m\d+[^\s\n]*/g);
+      // 1. 正規表示式：找出所有包含 m+數字 的商品 ID (無論是日本網址、台灣網址或中文語系網址)
+      const itemIdMatches = rawText.match(/m\d+/g);
 
-      if (!urlMatches || urlMatches.length === 0) {
-        alert("文字中未偵測到有效的 Mercari 商品網址！");
+      if (!itemIdMatches || itemIdMatches.length === 0) {
+        alert("文字中未偵測到有效的 Mercari 商品網址或 ID！");
         return;
       }
 
-      // 去除重複網址並去除尾端雜訊符號
-      const urls = [...new Set(urlMatches.map(u => u.trim()))];
+      // 2. 去除重複的商品 ID，並統一將其轉換為「日本煤爐標準網址」
+      const uniqueIds = [...new Set(itemIdMatches)];
+      const urls = uniqueIds.map(id => `https://jp.mercari.com/item/${id}`);
 
       const fetchBtn = document.getElementById("fetchBtn");
       fetchBtn.disabled = true;
