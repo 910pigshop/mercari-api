@@ -16,15 +16,15 @@
       <div class="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white font-bold text-xl">M</div>
       <div>
         <h1 class="text-xl font-bold text-slate-800">Mercari 報價助手</h1>
-        <p class="text-xs text-slate-500">日本/台灣代購即時抓取與計算</p>
+        <p class="text-xs text-slate-500">日本代購即時抓取與計算</p>
       </div>
     </div>
 
-    <label class="block text-sm font-semibold text-slate-700 mb-2">直接貼上客人的對話訊息（自動識別台/日煤爐與商城網址）</label>
-    <textarea id="urlInput" rows="5" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm mb-4" placeholder="貼上含有網址的對話訊息..."></textarea>
+    <label class="block text-sm font-semibold text-slate-700 mb-2">輸入 Mercari 商品網址（一行一個）</label>
+    <textarea id="urlInput" rows="4" class="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm mb-4" placeholder="https://jp.mercari.com/item/m83895663202&#10;https://jp.mercari.com/item/m55731070337&#10;https://jp.mercari.com/item/m34398942530"></textarea>
 
     <button onclick="fetchPrices()" id="fetchBtn" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition shadow-sm flex items-center justify-center gap-2">
-      <span>自動辨識網址並報價</span>
+      <span>撈取價格資訊</span>
     </button>
   </div>
 
@@ -65,18 +65,17 @@
     let fetchedItems = [];
 
     async function fetchPrices() {
-      const rawText = document.getElementById("urlInput").value.trim();
-      const urlMatches = rawText.match(/https?:\/\/[^\s\n]*mercari[^\s\n]*/gi);
+      const input = document.getElementById("urlInput").value.trim();
+      const urls = input.split("\n").map(u => u.trim()).filter(u => u.startsWith("http"));
 
-      if (!urlMatches || urlMatches.length === 0) {
-        alert("文字中未偵測到有效的 Mercari 商品網址！");
+      if (urls.length === 0) {
+        alert("請輸入有效的 Mercari 網址！");
         return;
       }
 
-      const urls = [...new Set(urlMatches.map(u => u.trim()))];
       const fetchBtn = document.getElementById("fetchBtn");
       fetchBtn.disabled = true;
-      fetchBtn.innerHTML = `<span>已識別 ${urls.length} 個網址，解析中...</span>`;
+      fetchBtn.innerHTML = `<span>自動抓取中...</span>`;
 
       try {
         const response = await fetch(WORKER_API_URL, {
@@ -97,7 +96,7 @@
         alert("連線失敗，請檢查網路。");
       } finally {
         fetchBtn.disabled = false;
-        fetchBtn.innerHTML = `<span>自動辨識網址並報價</span>`;
+        fetchBtn.innerHTML = `<span>撈取價格資訊</span>`;
       }
     }
 
@@ -110,32 +109,18 @@
         card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative";
 
         if (!item.success) {
-          card.innerHTML = `<p class="text-red-500 text-sm font-semibold">❌ 抓取失敗 (${item.originalUrl || item.url})</p>`;
+          card.innerHTML = `<p class="text-red-500 text-sm font-semibold">❌ 抓取失敗 (${item.url})</p>`;
         } else {
-          const twBadge = item.isTaiwanUrl 
-            ? `<span class="inline-block bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2 mr-2">🇹🇼 台灣煤爐網址轉換</span>` 
-            : ``;
-
-          const shopBadge = item.isShop 
-            ? `<span class="inline-block bg-purple-100 text-purple-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2 mr-2">🏬 Mercari Shops 商城</span>` 
-            : ``;
-
           const warningBadge = item.isChakubarai 
             ? `<span class="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">⚠️ 不含送料 (着払い / 買家負擔運費)</span>` 
             : `<span class="inline-block bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">✅ 送料込み (賣家負擔運費)</span>`;
 
           card.innerHTML = `
-            <div>
-              ${twBadge}${shopBadge}${warningBadge}
-            </div>
+            ${warningBadge}
             <h3 class="text-sm font-semibold text-slate-800 mb-2 line-clamp-2">${item.title}</h3>
-            <div class="flex justify-between items-center text-sm mb-3">
+            <div class="flex justify-between items-center text-sm">
               <span class="text-slate-500">日幣價格:</span>
               <span class="font-bold text-slate-900 text-base">¥${item.price.toLocaleString()}</span>
-            </div>
-            <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-500">
-              <span class="font-semibold text-slate-600">日本頁面網址:</span>
-              <a href="${item.jpUrl}" target="_blank" class="text-red-500 hover:text-red-600 font-medium truncate max-w-[280px] sm:max-w-[360px] hover:underline">${item.jpUrl}</a>
             </div>
           `;
         }
@@ -174,7 +159,7 @@
           if (item.isChakubarai) {
             text += `   ⚠️ 提醒：此商品為【着払い】，日本國內運費另計\n`;
           }
-          text += `   網址：${item.jpUrl}\n\n`;
+          text += `\n`;
         }
       });
 
