@@ -137,6 +137,7 @@
       localStorage.setItem("mercari_rate", rate);
       localStorage.setItem("mercari_fee", fee);
 
+      renderItems();
       calculateTotal();
     }
 
@@ -171,6 +172,15 @@
         return rounded + (10 - lastDigit);
       }
       return rounded;
+    }
+
+    // 計算單件商品台幣金額
+    function calculateSingleTwd(jpyPrice) {
+      if (!jpyPrice || jpyPrice <= 0) return 0;
+      const rate = parseFloat(document.getElementById("rate").value) || 0;
+      const feePercent = parseFloat(document.getElementById("feePercent").value) || 0;
+      const rawTwd = jpyPrice * rate * (1 + feePercent / 100);
+      return adjustRoundPrice(rawTwd);
     }
 
     async function fetchPrices() {
@@ -210,6 +220,22 @@
       }
     }
 
+    function editItemPrice(index) {
+      const currentPrice = fetchedItems[index].price || 0;
+      const input = prompt("請輸入修改後的日幣金額:", currentPrice);
+      if (input === null) return;
+
+      const newPrice = parseInt(input, 10);
+      if (!isNaN(newPrice) && newPrice >= 0) {
+        fetchedItems[index].price = newPrice;
+        fetchedItems[index].isManual = true;
+        renderItems();
+        calculateTotal();
+      } else {
+        alert("請輸入有效的數字！");
+      }
+    }
+
     function renderItems() {
       const list = document.getElementById("resultsList");
       list.innerHTML = "";
@@ -218,7 +244,7 @@
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative";
 
-        if (!item.success) {
+        if (!item.success && !item.isManual) {
           card.innerHTML = `
             <div class="mb-2">
               <span class="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-md">⚠️ 請手動確認商品金額及內容</span>
@@ -241,18 +267,31 @@
             ? `<span class="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">⚠️ 不含送料 (着払い / 買家負擔運費)</span>` 
             : `<span class="inline-block bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">✅ 送料込み (賣家負擔運費)</span>`;
 
+          const singleTwd = calculateSingleTwd(item.price);
+
           card.innerHTML = `
             <div>
               ${twBadge}${warningBadge}
             </div>
             <h3 class="text-sm font-semibold text-slate-800 mb-2 line-clamp-2">${item.title}</h3>
-            <div class="flex justify-between items-center text-sm mb-3">
-              <span class="text-slate-500">日幣價格:</span>
-              <span class="font-bold text-slate-900 text-base">¥${item.price.toLocaleString()}</span>
+            
+            <div class="space-y-1.5 mb-3">
+              <div class="flex justify-between items-center text-sm">
+                <span class="text-slate-500">日幣價格:</span>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-slate-900 text-base">¥${(item.price || 0).toLocaleString()}</span>
+                  <button onclick="editItemPrice(${index})" class="text-[11px] text-red-500 hover:text-red-600 bg-red-50 px-2 py-0.5 rounded font-medium border border-red-100 transition">手動修改</button>
+                </div>
+              </div>
+              <div class="flex justify-between items-center text-sm">
+                <span class="text-slate-500">預估台幣:</span>
+                <span class="font-bold text-emerald-600 text-base">NT$ ${singleTwd.toLocaleString()}</span>
+              </div>
             </div>
+
             <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-500">
               <span>日本頁面網址:</span>
-              <a href="${item.jpUrl}" target="_blank" class="text-red-500 hover:text-red-600 font-medium truncate max-w-[300px] hover:underline">${item.jpUrl}</a>
+              <a href="${item.jpUrl || item.originalUrl || item.url}" target="_blank" class="text-red-500 hover:text-red-600 font-medium truncate max-w-[300px] hover:underline">${item.jpUrl || item.originalUrl || item.url}</a>
             </div>
           `;
         }
@@ -264,12 +303,13 @@
 
     function updateManualPrice(index, val) {
       const price = parseInt(val, 10);
-      if (!isNaN(price) && price > 0) {
+      if (!isNaN(price) && price >= 0) {
         fetchedItems[index].price = price;
         fetchedItems[index].isManual = true;
       } else {
         fetchedItems[index].price = 0;
       }
+      renderItems();
       calculateTotal();
     }
 
@@ -305,9 +345,10 @@
           validCount++;
           const title = item.title || `手動確認商品 (${i + 1})`;
           const displayUrl = item.jpUrl || item.originalUrl || item.url;
+          const singleTwd = calculateSingleTwd(item.price);
 
           text += `${validCount}. ${title}\n`;
-          text += `   價格：¥${item.price.toLocaleString()} JPY\n`;
+          text += `   日幣價格：¥${item.price.toLocaleString()} JPY (約 NT$ ${singleTwd.toLocaleString()})\n`;
           if (item.isChakubarai) {
             text += `   ⚠️ 提醒：此商品為【着払い】，日本國內運費另計\n`;
           }
