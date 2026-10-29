@@ -45,9 +45,15 @@
           <p id="totalJpy" class="text-lg font-semibold">¥0</p>
         </div>
       </div>
-      <button onclick="copyQuote(1)" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-xl transition flex items-center justify-center gap-2">
+      <button onclick="copyQuote(1)" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-xl transition flex items-center justify-center gap-2 mb-4">
         複製完整報價文字
       </button>
+
+      <!-- 預覽框 (分頁一) -->
+      <div id="previewBox1" class="hidden border-t border-slate-800 pt-4 mt-2">
+        <p class="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1">📋 已複製的報價文字預覽：</p>
+        <pre id="previewText1" class="bg-slate-950 p-3.5 rounded-xl text-xs font-mono text-emerald-300 whitespace-pre-wrap break-all border border-slate-800 leading-relaxed"></pre>
+      </div>
     </div>
   </div>
 
@@ -82,9 +88,15 @@
           <p id="totalJpyGeneral" class="text-lg font-semibold">¥0</p>
         </div>
       </div>
-      <button onclick="copyQuote(2)" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-xl transition flex items-center justify-center gap-2">
+      <button onclick="copyQuote(2)" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-xl transition flex items-center justify-center gap-2 mb-4">
         複製完整報價文字
       </button>
+
+      <!-- 預覽框 (分頁二) -->
+      <div id="previewBox2" class="hidden border-t border-slate-800 pt-4 mt-2">
+        <p class="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1">📋 已複製的報價文字預覽：</p>
+        <pre id="previewText2" class="bg-slate-950 p-3.5 rounded-xl text-xs font-mono text-emerald-300 whitespace-pre-wrap break-all border border-slate-800 leading-relaxed"></pre>
+      </div>
     </div>
   </div>
 
@@ -178,7 +190,6 @@
     window.addEventListener("DOMContentLoaded", () => {
       loadSettings();
       fetchRealtimeRate();
-      // 初始化給通用手輸預設 1 個商品卡片
       addGeneralManualItem();
     });
 
@@ -457,7 +468,7 @@
       generalManualItems.push({
         title: "",
         price: 0,
-        type: "shop", // 預設為通販/新品
+        type: "shop",
         url: ""
       });
       renderGeneralManualItems();
@@ -528,13 +539,11 @@
             </div>
           </div>
 
-          <!-- 商品名稱 -->
           <div class="flex items-center gap-3">
             <label class="text-xs font-semibold text-slate-700 whitespace-nowrap min-w-[100px]">商品名稱:</label>
             <input type="text" value="${item.title}" placeholder="輸入商品名稱" oninput="updateGeneralTitle(${index}, this.value)" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800">
           </div>
 
-          <!-- 日幣價格 -->
           <div class="flex items-center gap-3">
             <label class="text-xs font-semibold text-slate-700 whitespace-nowrap min-w-[100px]">日幣價格:</label>
             <div class="relative flex-1">
@@ -543,13 +552,11 @@
             </div>
           </div>
 
-          <!-- 商品網址 -->
           <div class="flex items-center gap-3">
             <label class="text-xs font-semibold text-slate-700 whitespace-nowrap min-w-[100px]">商品頁面網址:</label>
             <input type="url" value="${item.url}" placeholder="https://..." oninput="updateGeneralUrl(${index}, this.value)" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800">
           </div>
 
-          <!-- 即時台幣金額 -->
           <div class="flex justify-between items-center text-sm pt-2 border-t border-slate-100">
             <span class="text-slate-500 text-xs font-semibold">預估台幣金額 (${item.type === 'shop' ? '通販費率' : '二手費率'}):</span>
             <span class="font-bold text-emerald-600 text-base general-single-twd">NT$ ${singleTwd.toLocaleString()}</span>
@@ -578,7 +585,7 @@
     }
 
 
-    /* ==================== 複製報價邏輯 ==================== */
+    /* ==================== 複製報價與預覽邏輯 ==================== */
     function copyQuote(tabSource) {
       const headerText = document.getElementById("tplHeader").value.trim();
       const shippingNote = document.getElementById("tplShippingNote").value.trim();
@@ -603,11 +610,15 @@
         if (tabSource === 1 ? (item.success || itemPrice > 0) : (itemPrice > 0)) {
           validCount++;
           const title = item.manualTitle || item.title || `商品 (${i + 1})`;
-          const displayUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url || "無網址";
+          const rawUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url || "";
+          const displayUrl = rawUrl.trim();
           const singleTwd = calculateSingleTwd(itemPrice, itemType);
 
+          // 行為一：若無網址則不列出網址列，且商品間不留空行
           text += `${validCount}. ${title} ($${singleTwd.toLocaleString()})\n`;
-          text += `   ${displayUrl}\n\n`;
+          if (displayUrl !== "") {
+            text += `   ${displayUrl}\n`;
+          }
         }
       });
 
@@ -625,7 +636,15 @@
       }
 
       navigator.clipboard.writeText(text).then(() => {
-        alert("報價文字已按照自訂範本複製到剪貼簿！");
+        // 行為二：按下複製後於對話框下方開啟預覽框
+        if (tabSource === 1) {
+          document.getElementById("previewText1").innerText = text;
+          document.getElementById("previewBox1").classList.remove("hidden");
+        } else {
+          document.getElementById("previewText2").innerText = text;
+          document.getElementById("previewBox2").classList.remove("hidden");
+        }
+        alert("報價文字已成功複製到剪貼簿！");
       });
     }
   </script>
