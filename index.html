@@ -56,7 +56,7 @@
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
       <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">⚙️ 匯率與費用設定</h2>
       
-      <div class="space-y-4">
+      <div class="space-y-4 mb-6">
         <!-- 國際即時匯率 -->
         <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex items-center justify-between">
           <div>
@@ -78,6 +78,29 @@
           <input type="number" id="feePercent" value="17.5" step="0.1" oninput="saveAndCalculate()" class="w-full p-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none">
         </div>
       </div>
+
+      <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">📝 報價複製範本自訂</h2>
+
+      <div class="space-y-4">
+        <!-- 開頭問候語 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">開頭問候語文字</label>
+          <textarea id="tplHeader" rows="2" oninput="saveSettingsOnly()" class="w-full p-2.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none" placeholder="例如：您好 感謝詢問✨✨&#10;以上物品報價"></textarea>
+        </div>
+
+        <!-- 運費說明文字 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">商品列表下方備註（如運費說明）</label>
+          <input type="text" id="tplShippingNote" oninput="saveSettingsOnly()" class="w-full p-2.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none" placeholder="例如：(不含國際運費&台灣運費)">
+        </div>
+
+        <!-- 結尾匯款說明 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">結尾說明文字（如匯款方式）</label>
+          <textarea id="tplFooter" rows="2" oninput="saveSettingsOnly()" class="w-full p-2.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none" placeholder="例如：匯款方式：線上轉帳、無卡匯款 (需先確認需匯款金額)"></textarea>
+        </div>
+      </div>
+
       <p class="text-[11px] text-slate-400 mt-4">* 修改後會自動儲存設定，下次開啟網頁無需重複輸入。</p>
     </div>
   </div>
@@ -97,6 +120,11 @@
   <script>
     const WORKER_API_URL = "https://mercari-api.910pigshop.workers.dev";
     let fetchedItems = [];
+
+    // 預設報價範本
+    const DEFAULT_HEADER = "您好 感謝詢問✨✨\n以上物品報價";
+    const DEFAULT_SHIPPING = "(不含國際運費&台灣運費)";
+    const DEFAULT_FOOTER = "匯款方式：線上轉帳、無卡匯款 (需先確認需匯款金額)";
 
     // 初始化：載入歷史設定與抓取即時匯率
     window.addEventListener("DOMContentLoaded", () => {
@@ -125,18 +153,28 @@
     function loadSettings() {
       const savedRate = localStorage.getItem("mercari_rate");
       const savedFee = localStorage.getItem("mercari_fee");
+      const savedHeader = localStorage.getItem("mercari_tpl_header");
+      const savedShipping = localStorage.getItem("mercari_tpl_shipping");
+      const savedFooter = localStorage.getItem("mercari_tpl_footer");
 
       if (savedRate !== null) document.getElementById("rate").value = savedRate;
       if (savedFee !== null) document.getElementById("feePercent").value = savedFee;
+      
+      document.getElementById("tplHeader").value = savedHeader !== null ? savedHeader : DEFAULT_HEADER;
+      document.getElementById("tplShippingNote").value = savedShipping !== null ? savedShipping : DEFAULT_SHIPPING;
+      document.getElementById("tplFooter").value = savedFooter !== null ? savedFooter : DEFAULT_FOOTER;
+    }
+
+    function saveSettingsOnly() {
+      localStorage.setItem("mercari_rate", document.getElementById("rate").value);
+      localStorage.setItem("mercari_fee", document.getElementById("feePercent").value);
+      localStorage.setItem("mercari_tpl_header", document.getElementById("tplHeader").value);
+      localStorage.setItem("mercari_tpl_shipping", document.getElementById("tplShippingNote").value);
+      localStorage.setItem("mercari_tpl_footer", document.getElementById("tplFooter").value);
     }
 
     function saveAndCalculate() {
-      const rate = document.getElementById("rate").value;
-      const fee = document.getElementById("feePercent").value;
-
-      localStorage.setItem("mercari_rate", rate);
-      localStorage.setItem("mercari_fee", fee);
-
+      saveSettingsOnly();
       renderItems();
       calculateTotal();
     }
@@ -244,7 +282,6 @@
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative";
 
-        // 如果是抓取失敗（無法自動轉譯）的網址，一律維持手動填寫介面
         if (!item.success) {
           const singleTwd = calculateSingleTwd(item.price);
           
@@ -276,16 +313,14 @@
                 <input type="url" value="${item.manualJpUrl || ''}" placeholder="https://jp.mercari.com/item/m..." oninput="updateManualUrl(${index}, this.value)" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800">
               </div>
 
-              ${item.price && item.price > 0 ? `
+              <!-- 即時台幣金額顯示列 -->
               <div class="flex justify-between items-center text-sm pt-2 border-t border-slate-100">
-                <span class="text-slate-500 text-xs">預估台幣:</span>
-                <span class="font-bold text-emerald-600 text-sm">NT$ ${singleTwd.toLocaleString()}</span>
+                <span class="text-slate-500 text-xs font-semibold">預估台幣金額:</span>
+                <span class="font-bold text-emerald-600 text-base single-twd-display">NT$ ${singleTwd.toLocaleString()}</span>
               </div>
-              ` : ''}
             </div>
           `;
         } else {
-          // 自動抓取成功的卡片
           const twBadge = item.isTaiwanUrl 
             ? `<span class="inline-block bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2 mr-2">🇹🇼 台灣煤爐網址轉換</span>` 
             : ``;
@@ -342,8 +377,8 @@
       }
       calculateTotal();
       
-      // 更新該張卡片內的單件預估台幣，不重新算整頁以免 input 失去焦點
-      const singleTwdEl = document.querySelectorAll("#resultsList > div")[index]?.querySelector(".text-emerald-600");
+      // 即時更新該張手輸卡片內的單件預估台幣，避免重構 DOM
+      const singleTwdEl = document.querySelectorAll("#resultsList > div")[index]?.querySelector(".single-twd-display");
       if (singleTwdEl) {
         const singleTwd = calculateSingleTwd(fetchedItems[index].price);
         singleTwdEl.innerText = `NT$ ${singleTwd.toLocaleString()}`;
@@ -375,12 +410,20 @@
     }
 
     function copyQuote() {
-      const rate = document.getElementById("rate").value;
-      const totalTwd = document.getElementById("totalTwd").innerText;
+      const headerText = document.getElementById("tplHeader").value.trim();
+      const shippingNote = document.getElementById("tplShippingNote").value.trim();
+      const footerText = document.getElementById("tplFooter").value.trim();
+      const totalTwdVal = document.getElementById("totalTwd").innerText.replace("NT$", "").trim();
       
-      let text = `🛒 【Mercari 日本代購報價】\n\n`;
-      let validCount = 0;
+      let text = "";
 
+      // 1. 開頭問候語
+      if (headerText) {
+        text += `${headerText}\n--------------------\n`;
+      }
+
+      // 2. 商品清單
+      let validCount = 0;
       fetchedItems.forEach((item, i) => {
         if (item.success || (item.price && item.price > 0)) {
           validCount++;
@@ -388,22 +431,26 @@
           const displayUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url;
           const singleTwd = calculateSingleTwd(item.price);
 
-          text += `${validCount}. ${title}\n`;
-          text += `   日幣價格：¥${item.price.toLocaleString()} JPY (約 NT$ ${singleTwd.toLocaleString()})\n`;
-          if (item.isChakubarai) {
-            text += `   ⚠️ 提醒：此商品為【着払い】，日本國內運費另計\n`;
-          }
-          text += `   網址：${displayUrl}\n\n`;
+          text += `${validCount}. ${title} ($${singleTwd.toLocaleString()})\n`;
+          text += `   ${displayUrl}\n\n`;
         }
       });
 
+      // 3. 運費說明
+      if (shippingNote) {
+        text += `${shippingNote}\n`;
+      }
+
       text += `--------------------\n`;
-      text += `💰 預估總金額：${totalTwd}\n`;
-      text += `(參考匯率: ${rate})\n`;
-      text += `\n有需要歡迎直接回覆下單！`;
+
+      // 4. 總計與結尾說明
+      text += `總計金額：NT$ ${totalTwdVal}\n`;
+      if (footerText) {
+        text += `${footerText}`;
+      }
 
       navigator.clipboard.writeText(text).then(() => {
-        alert("報價文字已複製到剪貼簿！");
+        alert("報價文字已按照自訂範本複製到剪貼簿！");
       });
     }
   </script>
