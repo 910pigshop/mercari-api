@@ -110,7 +110,7 @@
     </div>
   </div>
 
-  <!-- ==================== 分頁三：相卡報價 ==================== -->
+  <!-- ==================== 分頁三：相卡報價 (14 欄位) ==================== -->
   <div id="tab3" class="tab-content hidden">
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
       <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
@@ -151,7 +151,7 @@
     </div>
   </div>
 
-  <!-- ==================== 分頁四：純數字商品報價 (圖一還原) ==================== -->
+  <!-- ==================== 分頁四：純數字商品報價 ==================== -->
   <div id="tab4" class="tab-content hidden">
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
       <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
@@ -165,12 +165,9 @@
         <button onclick="resetNumberInputs()" class="text-xs text-slate-500 hover:text-red-500 font-semibold underline">重置內容</button>
       </div>
 
-      <!-- 10個數字輸入欄位 (對應圖一) -->
       <div id="numberInputsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mb-6"></div>
 
-      <!-- 圖一底部的多種報價卡片 (二手 / 通販 / 現地代購) -->
       <div class="space-y-3 border-t border-slate-100 pt-4">
-        <!-- 二手商品 -->
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
           <div>
             <p class="text-xs text-slate-500 font-semibold" id="numLabelUsed">二手商品 (0件)</p>
@@ -184,7 +181,6 @@
           </div>
         </div>
 
-        <!-- 網路通販 -->
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
           <div>
             <p class="text-xs text-slate-500 font-semibold" id="numLabelShop">網路通販 (0件)</p>
@@ -198,7 +194,6 @@
           </div>
         </div>
 
-        <!-- 現地代購 -->
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
           <div>
             <p class="text-xs text-slate-500 font-semibold" id="numLabelLocal">現地代購 (0件)</p>
@@ -214,16 +209,15 @@
       </div>
     </div>
 
-    <!-- 預覽框 (分頁四) -->
     <div id="previewBox4" class="hidden bg-slate-900 text-white rounded-2xl p-6 shadow-lg mb-6">
       <p class="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1">📋 已複製的報價文字預覽：</p>
       <pre id="previewText4" class="bg-slate-950 p-3.5 rounded-xl text-xs font-mono text-emerald-300 whitespace-pre-wrap break-all border border-slate-800 leading-relaxed"></pre>
     </div>
   </div>
 
-  <!-- ==================== 分頁五：系統設定 (圖二重構還原) ==================== -->
+  <!-- ==================== 分頁五：系統設定 (14 欄位可更名) ==================== -->
   <div id="tab5" class="tab-content hidden space-y-6">
-    <!-- 1. 費率與匯率基礎設定 (圖二上方) -->
+    <!-- 1. 費率與匯率基礎設定 -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
       <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">⚙️ 系統設定</h2>
       
@@ -264,9 +258,9 @@
       </div>
     </div>
 
-    <!-- 2. 相卡階梯報價定義 (圖二下方網格) -->
+    <!-- 2. 相卡階梯報價定義 (14 個可自訂名稱的欄位) -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">相卡階梯報價定義</h2>
+      <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">相卡階梯報價定義 (名稱與價格皆可修改)</h2>
       <div id="photoCardConfigGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </div>
 
@@ -338,14 +332,22 @@
     let generalManualItems = [];    // 分頁二：通用手輸商品
     let numberItems = Array(10).fill(0); // 分頁四：10個數字商品欄位
 
-    // 相卡預設定義 (與圖二相同)
+    // 14 個相卡欄位預設定義 (前 10 個預設，最後 4 個為自定義，全數可更名)
     let photoCardDefs = [
       { id: "lawson_l", name: "Lawson/全家--L判", jpyCost: 30, prices: [15, 14, 13.5] },
       { id: "seven_l", name: "7-11--L判", jpyCost: 40, prices: [18, 17, 16.5] },
       { id: "lawson_2l", name: "Lawson/全家--2L判", jpyCost: 80, prices: [28, 27, 26.5] },
       { id: "seven_2l", name: "7-11--2L判", jpyCost: 100, prices: [33, 32, 31.5] },
       { id: "lawson_post", name: "Lawson/全家--明信片", jpyCost: 70, prices: [25, 24, 23.5] },
-      { id: "seven_post", name: "7-11--明信片", jpyCost: 60, prices: [23, 22, 21.5] }
+      { id: "seven_post", name: "7-11--明信片", jpyCost: 60, prices: [23, 22, 21.5] },
+      { id: "official_200", name: "官方相卡/貼紙(¥200)", jpyCost: 200, prices: [60, 57, 55] },
+      { id: "official_250", name: "官方相卡/貼紙(¥250)", jpyCost: 250, prices: [75, 71, 69] },
+      { id: "official_300", name: "官方相卡/貼紙(¥300)", jpyCost: 300, prices: [90, 85.5, 83] },
+      { id: "official_500", name: "官方相卡/貼紙(¥500)", jpyCost: 500, prices: [150, 142, 138] },
+      { id: "custom_g", name: "自定義相卡 G", jpyCost: 0, prices: [0, 0, 0] },
+      { id: "custom_h", name: "自定義相卡 H", jpyCost: 0, prices: [0, 0, 0] },
+      { id: "custom_i", name: "自定義相卡 I", jpyCost: 0, prices: [0, 0, 0] },
+      { id: "custom_j", name: "自定義相卡 J", jpyCost: 0, prices: [0, 0, 0] }
     ];
     let photoCardCounts = Array(photoCardDefs.length).fill(0);
 
@@ -390,7 +392,12 @@
       if (savedLocalFee !== null) document.getElementById("localFeePercent").value = savedLocalFee;
       
       if (savedPhotoDefs !== null) {
-        try { photoCardDefs = JSON.parse(savedPhotoDefs); } catch (e) {}
+        try {
+          const parsed = JSON.parse(savedPhotoDefs);
+          if (Array.isArray(parsed) && parsed.length === 14) {
+            photoCardDefs = parsed;
+          }
+        } catch (e) {}
       }
 
       document.getElementById("tplHeader").value = savedHeader !== null ? savedHeader : DEFAULT_HEADER;
@@ -765,7 +772,7 @@
     }
 
 
-    /* ==================== 分頁三：相卡報價邏輯 ==================== */
+    /* ==================== 分頁三：相卡報價邏輯 (14 欄位) ==================== */
     function renderPhotoCardGrid() {
       const grid = document.getElementById("photoCardGrid");
       grid.innerHTML = "";
@@ -860,7 +867,7 @@
     }
 
 
-    /* ==================== 分頁四：純數字商品報價 (圖一還原) ==================== */
+    /* ==================== 分頁四：純數字商品報價 ==================== */
     function renderNumberInputsGrid() {
       const grid = document.getElementById("numberInputsGrid");
       grid.innerHTML = "";
@@ -904,21 +911,21 @@
 
       const costRate = parseFloat(document.getElementById("costRate").value) || 0.2;
 
-      // 1. 二手商品 (used)
+      // 二手商品
       const twdUsed = calculateSingleTwd(totalJpy, 'used');
       const profitUsed = twdUsed - Math.round(totalJpy * costRate);
       document.getElementById("numLabelUsed").innerText = `二手商品 (${activeCount}件)`;
       document.getElementById("numValUsed").innerText = `$${twdUsed.toLocaleString()}`;
       document.getElementById("numProfitUsed").innerText = `利潤 +${profitUsed}`;
 
-      // 2. 網路通販 (shop)
+      // 網路通販
       const twdShop = calculateSingleTwd(totalJpy, 'shop');
       const profitShop = twdShop - Math.round(totalJpy * costRate);
       document.getElementById("numLabelShop").innerText = `網路通販 (${activeCount}件)`;
       document.getElementById("numValShop").innerText = `$${twdShop.toLocaleString()}`;
       document.getElementById("numProfitShop").innerText = `利潤 +${profitShop}`;
 
-      // 3. 現地代購 (local)
+      // 現地代購
       const twdLocal = calculateSingleTwd(totalJpy, 'local');
       const profitLocal = twdLocal - Math.round(totalJpy * costRate);
       document.getElementById("numLabelLocal").innerText = `現地代購 (${activeCount}件)`;
@@ -959,36 +966,40 @@
     }
 
 
-    /* ==================== 分頁五：相卡階梯設定渲染 (圖二還原) ==================== */
+    /* ==================== 分頁五：相卡階梯設定渲染 (14 個更名欄位) ==================== */
     function renderPhotoCardConfigGrid() {
       const grid = document.getElementById("photoCardConfigGrid");
       grid.innerHTML = "";
 
       photoCardDefs.forEach((def, index) => {
         const card = document.createElement("div");
-        card.className = "bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 text-xs";
+        card.className = "bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 text-xs";
 
         card.innerHTML = `
-          <p class="font-bold text-slate-800 pb-1 border-b border-slate-100">${def.name}</p>
+          <!-- 項目名稱 (可修改輸入框) -->
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+            <span class="text-[10px] font-bold text-slate-400 w-5">#${index + 1}</span>
+            <input type="text" value="${def.name}" onchange="updatePhotoCardConfig(${index}, 'name', this.value)" class="w-full font-bold text-slate-800 bg-white px-2 py-1 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500/20">
+          </div>
           
           <div class="flex items-center justify-between">
             <span class="text-slate-500 font-semibold">日幣:</span>
-            <input type="number" value="${def.jpyCost}" onchange="updatePhotoCardConfig(${index}, 'jpyCost', this.value)" class="w-16 p-1 text-right rounded border border-slate-200 font-bold">
+            <input type="number" value="${def.jpyCost}" onchange="updatePhotoCardConfig(${index}, 'jpyCost', this.value)" class="w-20 p-1 text-right rounded border border-slate-300 font-bold bg-white">
           </div>
 
           <div class="flex items-center justify-between">
             <span class="text-slate-500 font-semibold">單張:</span>
-            <input type="number" value="${def.prices[0]}" onchange="updatePhotoCardConfig(${index}, 'price0', this.value)" class="w-16 p-1 text-right rounded border border-slate-200 font-bold">
+            <input type="number" value="${def.prices[0]}" onchange="updatePhotoCardConfig(${index}, 'price0', this.value)" class="w-20 p-1 text-right rounded border border-slate-300 font-bold bg-white">
           </div>
 
           <div class="flex items-center justify-between">
             <span class="text-amber-500 font-semibold">25+:</span>
-            <input type="number" value="${def.prices[1]}" onchange="updatePhotoCardConfig(${index}, 'price1', this.value)" class="w-16 p-1 text-right rounded border border-slate-200 font-bold">
+            <input type="number" value="${def.prices[1]}" onchange="updatePhotoCardConfig(${index}, 'price1', this.value)" class="w-20 p-1 text-right rounded border border-slate-300 font-bold bg-white">
           </div>
 
           <div class="flex items-center justify-between">
             <span class="text-red-500 font-semibold">50+:</span>
-            <input type="number" value="${def.prices[2]}" onchange="updatePhotoCardConfig(${index}, 'price2', this.value)" class="w-16 p-1 text-right rounded border border-slate-200 font-bold">
+            <input type="number" value="${def.prices[2]}" onchange="updatePhotoCardConfig(${index}, 'price2', this.value)" class="w-20 p-1 text-right rounded border border-slate-300 font-bold bg-white">
           </div>
         `;
         grid.appendChild(card);
@@ -996,13 +1007,17 @@
     }
 
     function updatePhotoCardConfig(index, key, val) {
-      const num = parseFloat(val);
-      if (isNaN(num)) return;
+      if (key === 'name') {
+        photoCardDefs[index].name = val.trim();
+      } else {
+        const num = parseFloat(val);
+        if (isNaN(num)) return;
 
-      if (key === 'jpyCost') photoCardDefs[index].jpyCost = num;
-      else if (key === 'price0') photoCardDefs[index].prices[0] = num;
-      else if (key === 'price1') photoCardDefs[index].prices[1] = num;
-      else if (key === 'price2') photoCardDefs[index].prices[2] = num;
+        if (key === 'jpyCost') photoCardDefs[index].jpyCost = num;
+        else if (key === 'price0') photoCardDefs[index].prices[0] = num;
+        else if (key === 'price1') photoCardDefs[index].prices[1] = num;
+        else if (key === 'price2') photoCardDefs[index].prices[2] = num;
+      }
 
       saveSettingsOnly();
       renderPhotoCardGrid();
