@@ -43,7 +43,10 @@
       <div class="flex justify-between items-end mb-4 border-b border-slate-800 pb-4">
         <div>
           <p class="text-xs text-slate-400">總計預估台幣 (已套用 0/5 進位)</p>
-          <p id="totalTwd" class="text-3xl font-extrabold text-emerald-400">NT$ 0</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span id="totalTwd" class="text-3xl font-extrabold text-emerald-400">NT$ 0</span>
+            <span id="totalProfit1" class="text-xs font-bold text-emerald-300">(獲利 +0)</span>
+          </div>
         </div>
         <div class="text-right">
           <p class="text-xs text-slate-400">日幣商品總額</p>
@@ -91,7 +94,10 @@
       <div class="flex justify-between items-end mb-4 border-b border-slate-800 pb-4">
         <div>
           <p class="text-xs text-slate-400">總計預估台幣 (已套用 0/5 進位)</p>
-          <p id="totalTwdGeneral" class="text-3xl font-extrabold text-emerald-400">NT$ 0</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span id="totalTwdGeneral" class="text-3xl font-extrabold text-emerald-400">NT$ 0</span>
+            <span id="totalProfit2" class="text-xs font-bold text-emerald-300">(獲利 +0)</span>
+          </div>
         </div>
         <div class="text-right">
           <p class="text-xs text-slate-400">日幣商品總額</p>
@@ -427,6 +433,7 @@
 
     async function fetchRealtimeRate() {
       const display = document.getElementById("realtimeRateDisplay");
+      if (!display) return;
       display.innerText = "讀取中...";
       try {
         const res = await fetch("https://open.er-api.com/v6/latest/JPY");
@@ -466,6 +473,14 @@
 
       const rawTwd = jpyPrice * rate * (1 + feePercent / 100);
       return adjustRoundPrice(rawTwd);
+    }
+
+    // 計算單件獲利助手
+    function calculateSingleProfit(jpyPrice, twdPrice) {
+      if (!jpyPrice || jpyPrice <= 0) return 0;
+      const costRate = parseFloat(document.getElementById("costRate").value) || 0.2;
+      const costTwd = Math.round(jpyPrice * costRate);
+      return twdPrice - costTwd;
     }
 
     /* ==================== 分頁一：煤爐邏輯 ==================== */
@@ -540,6 +555,7 @@
 
         if (!item.success) {
           const singleTwd = calculateSingleTwd(item.price, 'used');
+          const singleProfit = calculateSingleProfit(item.price, singleTwd);
           
           card.innerHTML = `
             <div class="mb-2">
@@ -568,7 +584,10 @@
 
               <div class="flex justify-between items-center text-sm pt-2 border-t border-slate-100">
                 <span class="text-slate-500 text-xs font-semibold">預估台幣金額:</span>
-                <span class="font-bold text-emerald-600 text-base single-twd-display">NT$ ${singleTwd.toLocaleString()}</span>
+                <div class="flex items-baseline gap-1.5">
+                  <span class="font-bold text-emerald-600 text-base single-twd-display">NT$ ${singleTwd.toLocaleString()}</span>
+                  <span class="text-xs font-semibold text-slate-500 single-profit-display">(獲利 +${singleProfit})</span>
+                </div>
               </div>
             </div>
           `;
@@ -582,6 +601,7 @@
             : `<span class="inline-block bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">✅ 送料込み (賣家負擔運費)</span>`;
 
           const singleTwd = calculateSingleTwd(item.price, 'used');
+          const singleProfit = calculateSingleProfit(item.price, singleTwd);
           const displayJpUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url;
 
           card.innerHTML = `
@@ -600,7 +620,10 @@
               </div>
               <div class="flex justify-between items-center text-sm">
                 <span class="text-slate-500">預估台幣:</span>
-                <span class="font-bold text-emerald-600 text-base">NT$ ${singleTwd.toLocaleString()}</span>
+                <div class="flex items-baseline gap-1.5">
+                  <span class="font-bold text-emerald-600 text-base">NT$ ${singleTwd.toLocaleString()}</span>
+                  <span class="text-xs font-semibold text-slate-500">(獲利 +${singleProfit})</span>
+                </div>
               </div>
             </div>
 
@@ -625,10 +648,15 @@
       fetchedItems[index].price = (!isNaN(price) && price >= 0) ? price : 0;
       calculateTotal();
       
-      const singleTwdEl = document.querySelectorAll("#resultsList > div")[index]?.querySelector(".single-twd-display");
-      if (singleTwdEl) {
+      const cardEl = document.querySelectorAll("#resultsList > div")[index];
+      if (cardEl) {
+        const singleTwdEl = cardEl.querySelector(".single-twd-display");
+        const singleProfitEl = cardEl.querySelector(".single-profit-display");
         const singleTwd = calculateSingleTwd(fetchedItems[index].price, 'used');
-        singleTwdEl.innerText = `NT$ ${singleTwd.toLocaleString()}`;
+        const singleProfit = calculateSingleProfit(fetchedItems[index].price, singleTwd);
+
+        if (singleTwdEl) singleTwdEl.innerText = `NT$ ${singleTwd.toLocaleString()}`;
+        if (singleProfitEl) singleProfitEl.innerText = `(獲利 +${singleProfit})`;
       }
     }
 
@@ -639,16 +667,20 @@
     function calculateTotal() {
       let totalJpy = 0;
       let totalTwdSum = 0;
+      let totalProfitSum = 0;
 
       fetchedItems.forEach(item => {
         if (item.price && item.price > 0) {
           totalJpy += item.price;
-          totalTwdSum += calculateSingleTwd(item.price, 'used');
+          const twd = calculateSingleTwd(item.price, 'used');
+          totalTwdSum += twd;
+          totalProfitSum += calculateSingleProfit(item.price, twd);
         }
       });
 
       document.getElementById("totalJpy").innerText = `¥${totalJpy.toLocaleString()}`;
       document.getElementById("totalTwd").innerText = `NT$ ${totalTwdSum.toLocaleString()}`;
+      document.getElementById("totalProfit1").innerText = `(獲利 +${totalProfitSum.toLocaleString()})`;
     }
 
 
@@ -686,10 +718,15 @@
       generalManualItems[index].price = (!isNaN(price) && price >= 0) ? price : 0;
       calculateGeneralTotal();
 
-      const singleTwdEl = document.querySelectorAll("#generalManualList > div")[index]?.querySelector(".general-single-twd");
-      if (singleTwdEl) {
+      const cardEl = document.querySelectorAll("#generalManualList > div")[index];
+      if (cardEl) {
+        const singleTwdEl = cardEl.querySelector(".general-single-twd");
+        const singleProfitEl = cardEl.querySelector(".general-single-profit");
         const singleTwd = calculateSingleTwd(generalManualItems[index].price, generalManualItems[index].type);
-        singleTwdEl.innerText = `NT$ ${singleTwd.toLocaleString()}`;
+        const singleProfit = calculateSingleProfit(generalManualItems[index].price, singleTwd);
+
+        if (singleTwdEl) singleTwdEl.innerText = `NT$ ${singleTwd.toLocaleString()}`;
+        if (singleProfitEl) singleProfitEl.innerText = `(獲利 +${singleProfit})`;
       }
     }
 
@@ -706,6 +743,7 @@
         card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative space-y-3";
 
         const singleTwd = calculateSingleTwd(item.price, item.type);
+        const singleProfit = calculateSingleProfit(item.price, singleTwd);
 
         const shopActiveBtn = item.type === 'shop' ? `bg-blue-500 text-white font-bold shadow-sm` : `bg-slate-100 text-slate-600 hover:bg-slate-200`;
         const usedActiveBtn = item.type === 'used' ? `bg-amber-500 text-white font-bold shadow-sm` : `bg-slate-100 text-slate-600 hover:bg-slate-200`;
@@ -744,7 +782,10 @@
 
           <div class="flex justify-between items-center text-sm pt-2 border-t border-slate-100">
             <span class="text-slate-500 text-xs font-semibold">預估台幣金額 (${item.type === 'shop' ? '通販費率' : '二手費率'}):</span>
-            <span class="font-bold text-emerald-600 text-base general-single-twd">NT$ ${singleTwd.toLocaleString()}</span>
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-bold text-emerald-600 text-base general-single-twd">NT$ ${singleTwd.toLocaleString()}</span>
+              <span class="text-xs font-semibold text-slate-500 general-single-profit">(獲利 +${singleProfit})</span>
+            </div>
           </div>
         `;
 
@@ -757,16 +798,20 @@
     function calculateGeneralTotal() {
       let totalJpy = 0;
       let totalTwdSum = 0;
+      let totalProfitSum = 0;
 
       generalManualItems.forEach(item => {
         if (item.price && item.price > 0) {
           totalJpy += item.price;
-          totalTwdSum += calculateSingleTwd(item.price, item.type);
+          const twd = calculateSingleTwd(item.price, item.type);
+          totalTwdSum += twd;
+          totalProfitSum += calculateSingleProfit(item.price, twd);
         }
       });
 
       document.getElementById("totalJpyGeneral").innerText = `¥${totalJpy.toLocaleString()}`;
       document.getElementById("totalTwdGeneral").innerText = `NT$ ${totalTwdSum.toLocaleString()}`;
+      document.getElementById("totalProfit2").innerText = `(獲利 +${totalProfitSum.toLocaleString()})`;
     }
 
 
@@ -931,7 +976,6 @@
       document.getElementById("numProfitLocal").innerText = `利潤 +${profitLocal}`;
     }
 
-    // 複製商品報價 (省略 商品 (x) 字樣)
     function copyNumberModeQuote(mode) {
       const headerText = document.getElementById("tplHeader").value.trim();
       const shippingNote = document.getElementById("tplShippingNote").value.trim();
@@ -1034,7 +1078,6 @@
       let validCount = 0;
 
       if (tabSource === 1) {
-        // 煤爐報價
         const totalTwdVal = document.getElementById("totalTwd").innerText.replace("NT$", "").trim();
 
         fetchedItems.forEach((item, i) => {
@@ -1057,7 +1100,6 @@
         text += `--------------------\n`;
         text += `總計金額：NT$ ${totalTwdVal}\n`;
       } else if (tabSource === 2) {
-        // 通用手輸報價 (空名稱/空網址自動隱藏)
         const totalTwdVal = document.getElementById("totalTwdGeneral").innerText.replace("NT$", "").trim();
 
         generalManualItems.forEach((item) => {
@@ -1084,7 +1126,6 @@
         text += `--------------------\n`;
         text += `總計金額：NT$ ${totalTwdVal}\n`;
       } else if (tabSource === 3) {
-        // 相卡報價
         const tierIdx = getTierIndex();
         photoCardDefs.forEach((def, index) => {
           const count = photoCardCounts[index] || 0;
