@@ -110,7 +110,7 @@
     </div>
   </div>
 
-  <!-- ==================== 分頁三：相卡報價 (14 欄位) ==================== -->
+  <!-- ==================== 分頁三：相卡報價 ==================== -->
   <div id="tab3" class="tab-content hidden">
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
       <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
@@ -215,7 +215,7 @@
     </div>
   </div>
 
-  <!-- ==================== 分頁五：系統設定 (14 欄位可更名) ==================== -->
+  <!-- ==================== 分頁五：系統設定 ==================== -->
   <div id="tab5" class="tab-content hidden space-y-6">
     <!-- 1. 費率與匯率基礎設定 -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -258,7 +258,7 @@
       </div>
     </div>
 
-    <!-- 2. 相卡階梯報價定義 (14 個可自訂名稱的欄位) -->
+    <!-- 2. 相卡階梯報價定義 -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
       <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">相卡階梯報價定義 (名稱與價格皆可修改)</h2>
       <div id="photoCardConfigGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -278,8 +278,7 @@
 
         <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-slate-400 space-y-1 select-none font-sans">
           <p class="text-[10px] font-bold text-slate-500">🔒 此處為系統自動生成內容 (無法手動編輯)：</p>
-          <p class="text-xs text-slate-600 font-mono">1. 商品名稱 ($台幣報價金額)</p>
-          <p class="text-xs text-slate-600 font-mono pl-3">https://jp.mercari.com/item/m...</p>
+          <p class="text-xs text-slate-600 font-mono">1. ($台幣報價金額)</p>
         </div>
 
         <div>
@@ -332,7 +331,6 @@
     let generalManualItems = [];    // 分頁二：通用手輸商品
     let numberItems = Array(10).fill(0); // 分頁四：10個數字商品欄位
 
-    // 14 個相卡欄位預設定義 (前 10 個預設，最後 4 個為自定義，全數可更名)
     let photoCardDefs = [
       { id: "lawson_l", name: "Lawson/全家--L判", jpyCost: 30, prices: [15, 14, 13.5] },
       { id: "seven_l", name: "7-11--L判", jpyCost: 40, prices: [18, 17, 16.5] },
@@ -772,7 +770,7 @@
     }
 
 
-    /* ==================== 分頁三：相卡報價邏輯 (14 欄位) ==================== */
+    /* ==================== 分頁三：相卡報價邏輯 ==================== */
     function renderPhotoCardGrid() {
       const grid = document.getElementById("photoCardGrid");
       grid.innerHTML = "";
@@ -933,6 +931,7 @@
       document.getElementById("numProfitLocal").innerText = `利潤 +${profitLocal}`;
     }
 
+    // 複製商品報價 (省略 商品 (x) 字樣)
     function copyNumberModeQuote(mode) {
       const headerText = document.getElementById("tplHeader").value.trim();
       const shippingNote = document.getElementById("tplShippingNote").value.trim();
@@ -949,7 +948,7 @@
           validCount++;
           const singleTwd = calculateSingleTwd(val, mode);
           modeTotalTwd += singleTwd;
-          text += `${validCount}. 商品 (${index + 1}) ($${singleTwd.toLocaleString()})\n`;
+          text += `${validCount}. ($${singleTwd.toLocaleString()})\n`;
         }
       });
 
@@ -966,7 +965,7 @@
     }
 
 
-    /* ==================== 分頁五：相卡階梯設定渲染 (14 個更名欄位) ==================== */
+    /* ==================== 分頁五：相卡階梯設定渲染 ==================== */
     function renderPhotoCardConfigGrid() {
       const grid = document.getElementById("photoCardConfigGrid");
       grid.innerHTML = "";
@@ -976,7 +975,6 @@
         card.className = "bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 text-xs";
 
         card.innerHTML = `
-          <!-- 項目名稱 (可修改輸入框) -->
           <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
             <span class="text-[10px] font-bold text-slate-400 w-5">#${index + 1}</span>
             <input type="text" value="${def.name}" onchange="updatePhotoCardConfig(${index}, 'name', this.value)" class="w-full font-bold text-slate-800 bg-white px-2 py-1 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500/20">
@@ -1035,20 +1033,18 @@
 
       let validCount = 0;
 
-      if (tabSource === 1 || tabSource === 2) {
-        const targetItems = tabSource === 1 ? fetchedItems : generalManualItems;
-        const totalTwdVal = document.getElementById(tabSource === 1 ? "totalTwd" : "totalTwdGeneral").innerText.replace("NT$", "").trim();
+      if (tabSource === 1) {
+        // 煤爐報價
+        const totalTwdVal = document.getElementById("totalTwd").innerText.replace("NT$", "").trim();
 
-        targetItems.forEach((item, i) => {
+        fetchedItems.forEach((item, i) => {
           const itemPrice = item.price || 0;
-          const itemType = item.type || 'used';
-
-          if (tabSource === 1 ? (item.success || itemPrice > 0) : (itemPrice > 0)) {
+          if (item.success || itemPrice > 0) {
             validCount++;
             const title = item.manualTitle || item.title || `商品 (${i + 1})`;
             const rawUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url || "";
             const displayUrl = rawUrl.trim();
-            const singleTwd = calculateSingleTwd(itemPrice, itemType);
+            const singleTwd = calculateSingleTwd(itemPrice, 'used');
 
             text += `${validCount}. ${title} ($${singleTwd.toLocaleString()})\n`;
             if (displayUrl !== "") {
@@ -1060,7 +1056,35 @@
         if (shippingNote) text += `${shippingNote}\n`;
         text += `--------------------\n`;
         text += `總計金額：NT$ ${totalTwdVal}\n`;
+      } else if (tabSource === 2) {
+        // 通用手輸報價 (空名稱/空網址自動隱藏)
+        const totalTwdVal = document.getElementById("totalTwdGeneral").innerText.replace("NT$", "").trim();
+
+        generalManualItems.forEach((item) => {
+          const itemPrice = item.price || 0;
+          if (itemPrice > 0) {
+            validCount++;
+            const singleTwd = calculateSingleTwd(itemPrice, item.type || 'shop');
+            const title = (item.title || "").trim();
+            const displayUrl = (item.url || "").trim();
+
+            if (title !== "") {
+              text += `${validCount}. ${title} ($${singleTwd.toLocaleString()})\n`;
+            } else {
+              text += `${validCount}. ($${singleTwd.toLocaleString()})\n`;
+            }
+
+            if (displayUrl !== "") {
+              text += `   ${displayUrl}\n`;
+            }
+          }
+        });
+
+        if (shippingNote) text += `${shippingNote}\n`;
+        text += `--------------------\n`;
+        text += `總計金額：NT$ ${totalTwdVal}\n`;
       } else if (tabSource === 3) {
+        // 相卡報價
         const tierIdx = getTierIndex();
         photoCardDefs.forEach((def, index) => {
           const count = photoCardCounts[index] || 0;
