@@ -9,11 +9,11 @@
     body { background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding-bottom: 95px; }
   </style>
 </head>
-<body class="p-4 md:p-8 max-w-5xl mx-auto">
+<body class="p-3 md:p-6 max-w-5xl mx-auto">
 
   <!-- ==================== 分頁一：煤爐報價計算 ==================== -->
   <div id="tab1" class="tab-content">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-5">
       <div class="flex items-center gap-3 mb-4">
         <div class="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white font-bold text-xl">M</div>
         <div>
@@ -36,7 +36,7 @@
     </div>
 
     <!-- 結果清單 -->
-    <div id="resultsList" class="space-y-4 mb-6"></div>
+    <div id="resultsList" class="space-y-4 mb-5"></div>
 
     <!-- 報價總計與複製 -->
     <div id="summaryCard" class="hidden bg-slate-900 text-white rounded-2xl p-6 shadow-lg mb-6">
@@ -67,7 +67,7 @@
 
   <!-- ==================== 分頁二：通用手輸報價 ==================== -->
   <div id="tab2" class="tab-content hidden">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-5">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center text-white font-bold text-xl">✍️</div>
@@ -118,7 +118,7 @@
 
   <!-- ==================== 分頁三：相卡報價 ==================== -->
   <div id="tab3" class="tab-content hidden">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-5">
       <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center text-white font-bold text-xl">📷</div>
@@ -130,10 +130,14 @@
         <button onclick="resetPhotoCardCounts()" class="text-xs text-slate-500 hover:text-red-500 font-semibold underline">重置張數</button>
       </div>
 
-      <div id="photoCardGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      <div id="photoCardGrid" class="grid grid-cols-2 gap-3 mb-4"></div>
+
+      <button onclick="calculatePhotoCardsAndGenerate()" class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+        <span>🔍 生成報價</span>
+      </button>
     </div>
 
-    <!-- 相卡報價總結 -->
+    <!-- 相卡報價總結 (對應圖一卡片) -->
     <div id="summaryCardPhoto" class="bg-slate-900 text-white rounded-2xl p-6 shadow-lg mb-6">
       <div class="flex justify-between items-end mb-4 border-b border-slate-800 pb-4">
         <div>
@@ -142,24 +146,25 @@
         </div>
         <div class="text-right">
           <p class="text-xs text-slate-400">估算利潤</p>
-          <p id="photoTotalProfit" class="text-lg font-semibold text-emerald-300">NT$ 0</p>
+          <p id="photoTotalProfit" class="text-lg font-bold text-emerald-300">NT$ 0</p>
         </div>
       </div>
+
       <button onclick="copyQuote(3)" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold rounded-xl transition flex items-center justify-center gap-2 mb-4">
-        複製完整報價文字
+        複製報價文字
       </button>
 
       <!-- 預覽框 (分頁三) -->
       <div id="previewBox3" class="hidden border-t border-slate-800 pt-4 mt-2">
         <p class="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1">📋 已複製的報價文字預覽：</p>
-        <pre id="previewText3" class="bg-slate-950 p-3.5 rounded-xl text-xs font-mono text-emerald-300 whitespace-pre-wrap break-all border border-slate-800 leading-relaxed"></pre>
+        <pre id="previewText3" class="bg-slate-950 p-4 rounded-xl text-xs font-mono text-emerald-300 whitespace-pre-wrap break-all border border-slate-800 leading-relaxed"></pre>
       </div>
     </div>
   </div>
 
   <!-- ==================== 分頁四：純數字商品報價 ==================== -->
   <div id="tab4" class="tab-content hidden">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-5">
       <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-xl">📦</div>
@@ -222,88 +227,97 @@
   </div>
 
   <!-- ==================== 分頁五：系統設定 ==================== -->
-  <div id="tab5" class="tab-content hidden space-y-6">
+  <div id="tab5" class="tab-content hidden space-y-5">
     <!-- 1. 費率與匯率基礎設定 -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">⚙️ 系統設定</h2>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">⚙️ 基礎費率與匯率設定</h2>
       
       <div class="space-y-3">
         <div class="flex items-center justify-between">
-          <label class="text-sm font-semibold text-slate-700">成本匯率</label>
-          <input type="number" id="costRate" value="0.2" step="0.001" oninput="saveAndCalculate()" class="w-32 p-2 text-right rounded-lg border border-slate-300 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
+          <label class="text-xs font-semibold text-slate-700">成本匯率</label>
+          <input type="number" id="costRate" value="0.2" step="0.001" oninput="saveAndCalculate()" class="w-28 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
         </div>
 
         <div class="flex items-center justify-between">
-          <label class="text-sm font-semibold text-slate-700">公告匯率</label>
-          <input type="number" id="rate" value="0.22" step="0.001" oninput="saveAndCalculate()" class="w-32 p-2 text-right rounded-lg border border-slate-300 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
+          <label class="text-xs font-semibold text-slate-700">公告匯率</label>
+          <input type="number" id="rate" value="0.22" step="0.001" oninput="saveAndCalculate()" class="w-28 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
         </div>
 
         <div class="flex items-center justify-between">
-          <label class="text-sm font-semibold text-slate-700">二手商品利潤</label>
+          <label class="text-xs font-semibold text-slate-700">二手商品利潤</label>
           <div class="flex items-center gap-1">
-            <input type="number" id="usedFeePercent" value="17.5" step="0.1" oninput="saveAndCalculate()" class="w-24 p-2 text-right rounded-lg border border-slate-300 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
-            <span class="text-sm text-slate-500 font-bold">%</span>
+            <input type="number" id="usedFeePercent" value="17.5" step="0.1" oninput="saveAndCalculate()" class="w-20 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
+            <span class="text-xs text-slate-500 font-bold">%</span>
           </div>
         </div>
 
         <div class="flex items-center justify-between">
-          <label class="text-sm font-semibold text-slate-700">網路通販利潤</label>
+          <label class="text-xs font-semibold text-slate-700">網路通販利潤</label>
           <div class="flex items-center gap-1">
-            <input type="number" id="shopFeePercent" value="15" step="0.1" oninput="saveAndCalculate()" class="w-24 p-2 text-right rounded-lg border border-slate-300 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
-            <span class="text-sm text-slate-500 font-bold">%</span>
+            <input type="number" id="shopFeePercent" value="15" step="0.1" oninput="saveAndCalculate()" class="w-20 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
+            <span class="text-xs text-slate-500 font-bold">%</span>
           </div>
         </div>
 
         <div class="flex items-center justify-between">
-          <label class="text-sm font-semibold text-slate-700">現地代購利潤</label>
+          <label class="text-xs font-semibold text-slate-700">現地代購利潤</label>
           <div class="flex items-center gap-1">
-            <input type="number" id="localFeePercent" value="30" step="0.1" oninput="saveAndCalculate()" class="w-24 p-2 text-right rounded-lg border border-slate-300 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
-            <span class="text-sm text-slate-500 font-bold">%</span>
+            <input type="number" id="localFeePercent" value="30" step="0.1" oninput="saveAndCalculate()" class="w-20 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
+            <span class="text-xs text-slate-500 font-bold">%</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 2. 相卡階梯報價定義 -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">相卡階梯報價定義 (名稱與價格皆可修改)</h2>
-      <div id="photoCardConfigGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    <!-- 2. 相卡階梯報價定義 (對應圖二：左右雙欄精簡版型) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">相卡階梯報價定義</h2>
+      <div id="photoCardConfigGrid" class="grid grid-cols-2 gap-3"></div>
     </div>
 
-    <!-- 3. 報價複製範本自訂 -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">📝 報價複製範本自訂 (填空預覽格式)</h2>
+    <!-- 3. 相卡專用報價範本設定 (圖一格式) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">📸 相卡報價範本自訂 (圖一格式)</h2>
 
-      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 font-mono text-xs text-slate-700 space-y-3">
+      <div class="space-y-3 font-mono text-xs">
         <div>
-          <label class="block text-[11px] font-bold text-red-500 mb-1 font-sans">1. 開頭問候語 (可填空修改)：</label>
-          <textarea id="tplHeader" rows="2" oninput="saveSettingsOnly()" class="w-full p-2.5 rounded-xl border border-red-200 focus:border-red-500 bg-white text-xs font-sans text-slate-800 focus:ring-2 focus:ring-red-500/20 outline-none" placeholder="您好 感謝詢問✨✨&#10;以上物品報價"></textarea>
-        </div>
-
-        <div class="border-b border-dashed border-slate-300 my-2"></div>
-
-        <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-slate-400 space-y-1 select-none font-sans">
-          <p class="text-[10px] font-bold text-slate-500">🔒 此處為系統自動生成內容 (無法手動編輯)：</p>
-          <p class="text-xs text-slate-600 font-mono">1. ($台幣報價金額)</p>
+          <label class="block text-[11px] font-bold text-purple-600 mb-1 font-sans">1. 開頭說明 (使用 {TOTAL_COUNT} 代表總張數)：</label>
+          <input type="text" id="tplPhotoHeader" oninput="saveSettingsOnly()" class="w-full p-2 rounded-xl border border-purple-200 focus:border-purple-500 text-xs font-sans text-slate-800 outline-none" placeholder="📸 相卡報價 (總計 {TOTAL_COUNT} 張)">
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-red-500 mb-1 font-sans">2. 運費說明備註 (可填空修改)：</label>
-          <input type="text" id="tplShippingNote" oninput="saveSettingsOnly()" class="w-full p-2.5 rounded-xl border border-red-200 focus:border-red-500 bg-white text-xs font-sans text-slate-800 focus:ring-2 focus:ring-red-500/20 outline-none" placeholder="(不含國際運費&台灣運費)">
-        </div>
-
-        <div class="border-b border-dashed border-slate-300 my-2"></div>
-
-        <div class="bg-slate-100 p-2.5 rounded-xl border border-slate-200 text-slate-600 select-none font-sans text-xs font-bold">
-          總計金額：NT$ [系統自動計算金額]
+          <label class="block text-[11px] font-bold text-purple-600 mb-1 font-sans">2. 運費說明備註：</label>
+          <input type="text" id="tplPhotoShipping" oninput="saveSettingsOnly()" class="w-full p-2 rounded-xl border border-purple-200 focus:border-purple-500 text-xs font-sans text-slate-800 outline-none" placeholder="(不含國際運費&台灣運費)">
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-red-500 mb-1 font-sans">3. 結尾說明/匯款方式 (可填空修改)：</label>
-          <textarea id="tplFooter" rows="2" oninput="saveSettingsOnly()" class="w-full p-2.5 rounded-xl border border-red-200 focus:border-red-500 bg-white text-xs font-sans text-slate-800 focus:ring-2 focus:ring-red-500/20 outline-none" placeholder="匯款方式：線上轉帳、無卡匯款 (需先確認需匯款金額)"></textarea>
+          <label class="block text-[11px] font-bold text-purple-600 mb-1 font-sans">3. 結尾確認文字：</label>
+          <textarea id="tplPhotoFooter" rows="2" oninput="saveSettingsOnly()" class="w-full p-2 rounded-xl border border-purple-200 focus:border-purple-500 text-xs font-sans text-slate-800 outline-none" placeholder="💡 再幫我確認張數跟金額是否都正確&#10;內容正確請再直接完成匯款 謝謝"></textarea>
         </div>
       </div>
-      <p class="text-[11px] text-slate-400 mt-4">* 修改後會自動儲存設定，下次開啟網頁無需重複輸入。</p>
+    </div>
+
+    <!-- 4. 通用商品報價複製範本自訂 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">📝 通用商品報價複製範本自訂</h2>
+
+      <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 font-mono text-xs text-slate-700 space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-red-500 mb-1 font-sans">1. 開頭問候語：</label>
+          <textarea id="tplHeader" rows="2" oninput="saveSettingsOnly()" class="w-full p-2.5 rounded-xl border border-red-200 focus:border-red-500 bg-white text-xs font-sans text-slate-800 outline-none" placeholder="您好 感謝詢問✨✨&#10;以上物品報價"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-red-500 mb-1 font-sans">2. 運費說明備註：</label>
+          <input type="text" id="tplShippingNote" oninput="saveSettingsOnly()" class="w-full p-2.5 rounded-xl border border-red-200 focus:border-red-500 bg-white text-xs font-sans text-slate-800 outline-none" placeholder="(不含國際運費&台灣運費)">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-red-500 mb-1 font-sans">3. 結尾說明/匯款方式：</label>
+          <textarea id="tplFooter" rows="2" oninput="saveSettingsOnly()" class="w-full p-2.5 rounded-xl border border-red-200 focus:border-red-500 bg-white text-xs font-sans text-slate-800 outline-none" placeholder="匯款方式：線上轉帳、無卡匯款 (需先確認需匯款金額)"></textarea>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-3">* 修改後會自動儲存設定，下次開啟網頁無需重複輸入。</p>
     </div>
   </div>
 
@@ -359,6 +373,10 @@
     const DEFAULT_SHIPPING = "(不含國際運費&台灣運費)";
     const DEFAULT_FOOTER = "匯款方式：線上轉帳、無卡匯款 (需先確認需匯款金額)";
 
+    const DEFAULT_PHOTO_HEADER = "📸 相卡報價 (總計 {TOTAL_COUNT} 張)";
+    const DEFAULT_PHOTO_SHIPPING = "(不含國際運費&台灣運費)";
+    const DEFAULT_PHOTO_FOOTER = "💡 再幫我確認張數跟金額是否都正確\n內容正確請再直接完成匯款 謝謝";
+
     window.addEventListener("DOMContentLoaded", () => {
       loadSettings();
       fetchRealtimeRate();
@@ -389,6 +407,10 @@
       const savedFooter = localStorage.getItem("mercari_tpl_footer");
       const savedPhotoDefs = localStorage.getItem("mercari_photo_defs");
 
+      const savedPhotoHeader = localStorage.getItem("mercari_tpl_photo_header");
+      const savedPhotoShipping = localStorage.getItem("mercari_tpl_photo_shipping");
+      const savedPhotoFooter = localStorage.getItem("mercari_tpl_photo_footer");
+
       if (savedRate !== null) document.getElementById("rate").value = savedRate;
       if (savedCostRate !== null) document.getElementById("costRate").value = savedCostRate;
       if (savedUsedFee !== null) document.getElementById("usedFeePercent").value = savedUsedFee;
@@ -407,6 +429,10 @@
       document.getElementById("tplHeader").value = savedHeader !== null ? savedHeader : DEFAULT_HEADER;
       document.getElementById("tplShippingNote").value = savedShipping !== null ? savedShipping : DEFAULT_SHIPPING;
       document.getElementById("tplFooter").value = savedFooter !== null ? savedFooter : DEFAULT_FOOTER;
+
+      document.getElementById("tplPhotoHeader").value = savedPhotoHeader !== null ? savedPhotoHeader : DEFAULT_PHOTO_HEADER;
+      document.getElementById("tplPhotoShipping").value = savedPhotoShipping !== null ? savedPhotoShipping : DEFAULT_PHOTO_SHIPPING;
+      document.getElementById("tplPhotoFooter").value = savedPhotoFooter !== null ? savedPhotoFooter : DEFAULT_PHOTO_FOOTER;
     }
 
     function saveSettingsOnly() {
@@ -419,6 +445,10 @@
       localStorage.setItem("mercari_tpl_shipping", document.getElementById("tplShippingNote").value);
       localStorage.setItem("mercari_tpl_footer", document.getElementById("tplFooter").value);
       localStorage.setItem("mercari_photo_defs", JSON.stringify(photoCardDefs));
+
+      localStorage.setItem("mercari_tpl_photo_header", document.getElementById("tplPhotoHeader").value);
+      localStorage.setItem("mercari_tpl_photo_shipping", document.getElementById("tplPhotoShipping").value);
+      localStorage.setItem("mercari_tpl_photo_footer", document.getElementById("tplPhotoFooter").value);
     }
 
     function saveAndCalculate() {
@@ -475,7 +505,6 @@
       return adjustRoundPrice(rawTwd);
     }
 
-    // 計算單件獲利助手
     function calculateSingleProfit(jpyPrice, twdPrice) {
       if (!jpyPrice || jpyPrice <= 0) return 0;
       const costRate = parseFloat(document.getElementById("costRate").value) || 0.2;
@@ -815,28 +844,28 @@
     }
 
 
-    /* ==================== 分頁三：相卡報價邏輯 ==================== */
+    /* ==================== 分頁三：相卡報價邏輯 (對應圖一介面) ==================== */
     function renderPhotoCardGrid() {
       const grid = document.getElementById("photoCardGrid");
       grid.innerHTML = "";
 
       photoCardDefs.forEach((def, index) => {
         const card = document.createElement("div");
-        card.className = "bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex items-center justify-between";
+        card.className = "bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex flex-col justify-between";
 
         const count = photoCardCounts[index] || 0;
         const currentTierIndex = getTierIndex();
         const unitPrice = def.prices[currentTierIndex];
 
         card.innerHTML = `
-          <div>
-            <p class="text-xs font-bold text-slate-800">${def.name}</p>
+          <div class="mb-2">
+            <p class="text-xs font-bold text-slate-800 line-clamp-1">${def.name}</p>
             <p class="text-xs font-bold text-blue-600 mt-0.5">$${unitPrice}</p>
           </div>
-          <div class="flex items-center gap-2">
-            <button onclick="changePhotoCardCount(${index}, -1)" class="w-8 h-8 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold flex items-center justify-center text-lg shadow-sm">-</button>
-            <input type="number" value="${count}" min="0" onchange="setPhotoCardCount(${index}, this.value)" class="w-12 text-center py-1 text-sm font-bold rounded-lg border border-slate-300 focus:outline-none">
-            <button onclick="changePhotoCardCount(${index}, 1)" class="w-8 h-8 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold flex items-center justify-center text-lg shadow-sm">+</button>
+          <div class="flex items-center justify-end gap-1.5">
+            <button onclick="changePhotoCardCount(${index}, -1)" class="w-6 h-6 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold flex items-center justify-center text-sm shadow-sm">-</button>
+            <span class="w-7 text-center text-xs font-bold text-slate-800">${count}</span>
+            <button onclick="changePhotoCardCount(${index}, 1)" class="w-6 h-6 rounded bg-blue-500 hover:bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">+</button>
           </div>
         `;
 
@@ -848,12 +877,6 @@
 
     function changePhotoCardCount(index, delta) {
       photoCardCounts[index] = Math.max(0, (photoCardCounts[index] || 0) + delta);
-      renderPhotoCardGrid();
-    }
-
-    function setPhotoCardCount(index, val) {
-      const num = parseInt(val, 10);
-      photoCardCounts[index] = !isNaN(num) && num >= 0 ? num : 0;
       renderPhotoCardGrid();
     }
 
@@ -907,6 +930,11 @@
         badge.innerText = "原價算";
         badge.className = "ml-1 px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300";
       }
+    }
+
+    function calculatePhotoCardsAndGenerate() {
+      calculatePhotoCards();
+      copyQuote(3);
     }
 
 
@@ -1009,39 +1037,37 @@
     }
 
 
-    /* ==================== 分頁五：相卡階梯設定渲染 ==================== */
+    /* ==================== 分頁五：相卡階梯設定渲染 (對應圖二：雙欄簡潔版型) ==================== */
     function renderPhotoCardConfigGrid() {
       const grid = document.getElementById("photoCardConfigGrid");
       grid.innerHTML = "";
 
       photoCardDefs.forEach((def, index) => {
         const card = document.createElement("div");
-        card.className = "bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 text-xs";
+        card.className = "bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-1.5 text-xs";
 
         card.innerHTML = `
-          <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
-            <span class="text-[10px] font-bold text-slate-400 w-5">#${index + 1}</span>
-            <input type="text" value="${def.name}" onchange="updatePhotoCardConfig(${index}, 'name', this.value)" class="w-full font-bold text-slate-800 bg-white px-2 py-1 rounded border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500/20">
-          </div>
+          <!-- 項目名稱可手動修改 -->
+          <input type="text" value="${def.name}" onchange="updatePhotoCardConfig(${index}, 'name', this.value)" class="w-full font-bold text-slate-800 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500 text-xs mb-1">
           
           <div class="flex items-center justify-between">
-            <span class="text-slate-500 font-semibold">日幣:</span>
-            <input type="number" value="${def.jpyCost}" onchange="updatePhotoCardConfig(${index}, 'jpyCost', this.value)" class="w-20 p-1 text-right rounded border border-slate-300 font-bold bg-white">
+            <span class="text-slate-500 font-medium">日幣:</span>
+            <input type="number" value="${def.jpyCost}" onchange="updatePhotoCardConfig(${index}, 'jpyCost', this.value)" class="w-16 p-1 text-center rounded-lg border border-slate-200 font-bold bg-white text-xs">
           </div>
 
           <div class="flex items-center justify-between">
-            <span class="text-slate-500 font-semibold">單張:</span>
-            <input type="number" value="${def.prices[0]}" onchange="updatePhotoCardConfig(${index}, 'price0', this.value)" class="w-20 p-1 text-right rounded border border-slate-300 font-bold bg-white">
+            <span class="text-slate-500 font-medium">單張:</span>
+            <input type="number" value="${def.prices[0]}" onchange="updatePhotoCardConfig(${index}, 'price0', this.value)" class="w-16 p-1 text-center rounded-lg border border-slate-200 font-bold bg-white text-xs">
           </div>
 
           <div class="flex items-center justify-between">
-            <span class="text-amber-500 font-semibold">25+:</span>
-            <input type="number" value="${def.prices[1]}" onchange="updatePhotoCardConfig(${index}, 'price1', this.value)" class="w-20 p-1 text-right rounded border border-slate-300 font-bold bg-white">
+            <span class="text-amber-500 font-medium">25+:</span>
+            <input type="number" value="${def.prices[1]}" onchange="updatePhotoCardConfig(${index}, 'price1', this.value)" class="w-16 p-1 text-center rounded-lg border border-slate-200 font-bold bg-white text-xs">
           </div>
 
           <div class="flex items-center justify-between">
-            <span class="text-red-500 font-semibold">50+:</span>
-            <input type="number" value="${def.prices[2]}" onchange="updatePhotoCardConfig(${index}, 'price2', this.value)" class="w-20 p-1 text-right rounded border border-slate-300 font-bold bg-white">
+            <span class="text-red-500 font-medium">50+:</span>
+            <input type="number" value="${def.prices[2]}" onchange="updatePhotoCardConfig(${index}, 'price2', this.value)" class="w-16 p-1 text-center rounded-lg border border-slate-200 font-bold bg-white text-xs">
           </div>
         `;
         grid.appendChild(card);
@@ -1068,82 +1094,80 @@
 
     /* ==================== 通用複製報價邏輯 ==================== */
     function copyQuote(tabSource) {
-      const headerText = document.getElementById("tplHeader").value.trim();
-      const shippingNote = document.getElementById("tplShippingNote").value.trim();
-      const footerText = document.getElementById("tplFooter").value.trim();
-      
       let text = "";
-      if (headerText) text += `${headerText}\n--------------------\n`;
 
-      let validCount = 0;
+      if (tabSource === 1 || tabSource === 2) {
+        const headerText = document.getElementById("tplHeader").value.trim();
+        const shippingNote = document.getElementById("tplShippingNote").value.trim();
+        const footerText = document.getElementById("tplFooter").value.trim();
 
-      if (tabSource === 1) {
-        const totalTwdVal = document.getElementById("totalTwd").innerText.replace("NT$", "").trim();
+        if (headerText) text += `${headerText}\n--------------------\n`;
+        let validCount = 0;
 
-        fetchedItems.forEach((item, i) => {
-          const itemPrice = item.price || 0;
-          if (item.success || itemPrice > 0) {
-            validCount++;
-            const title = item.manualTitle || item.title || `商品 (${i + 1})`;
-            const rawUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url || "";
-            const displayUrl = rawUrl.trim();
-            const singleTwd = calculateSingleTwd(itemPrice, 'used');
+        if (tabSource === 1) {
+          const totalTwdVal = document.getElementById("totalTwd").innerText.replace("NT$", "").trim();
+          fetchedItems.forEach((item, i) => {
+            const itemPrice = item.price || 0;
+            if (item.success || itemPrice > 0) {
+              validCount++;
+              const title = item.manualTitle || item.title || `商品 (${i + 1})`;
+              const rawUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url || "";
+              const displayUrl = rawUrl.trim();
+              const singleTwd = calculateSingleTwd(itemPrice, 'used');
 
-            text += `${validCount}. ${title} ($${singleTwd.toLocaleString()})\n`;
-            if (displayUrl !== "") {
-              text += `   ${displayUrl}\n`;
-            }
-          }
-        });
-
-        if (shippingNote) text += `${shippingNote}\n`;
-        text += `--------------------\n`;
-        text += `總計金額：NT$ ${totalTwdVal}\n`;
-      } else if (tabSource === 2) {
-        const totalTwdVal = document.getElementById("totalTwdGeneral").innerText.replace("NT$", "").trim();
-
-        generalManualItems.forEach((item) => {
-          const itemPrice = item.price || 0;
-          if (itemPrice > 0) {
-            validCount++;
-            const singleTwd = calculateSingleTwd(itemPrice, item.type || 'shop');
-            const title = (item.title || "").trim();
-            const displayUrl = (item.url || "").trim();
-
-            if (title !== "") {
               text += `${validCount}. ${title} ($${singleTwd.toLocaleString()})\n`;
-            } else {
-              text += `${validCount}. ($${singleTwd.toLocaleString()})\n`;
+              if (displayUrl !== "") text += `   ${displayUrl}\n`;
             }
+          });
+          if (shippingNote) text += `${shippingNote}\n`;
+          text += `--------------------\n`;
+          text += `總計金額：NT$ ${totalTwdVal}\n`;
+        } else if (tabSource === 2) {
+          const totalTwdVal = document.getElementById("totalTwdGeneral").innerText.replace("NT$", "").trim();
+          generalManualItems.forEach((item) => {
+            const itemPrice = item.price || 0;
+            if (itemPrice > 0) {
+              validCount++;
+              const singleTwd = calculateSingleTwd(itemPrice, item.type || 'shop');
+              const title = (item.title || "").trim();
+              const displayUrl = (item.url || "").trim();
 
-            if (displayUrl !== "") {
-              text += `   ${displayUrl}\n`;
+              if (title !== "") text += `${validCount}. ${title} ($${singleTwd.toLocaleString()})\n`;
+              else text += `${validCount}. ($${singleTwd.toLocaleString()})\n`;
+
+              if (displayUrl !== "") text += `   ${displayUrl}\n`;
             }
-          }
-        });
-
-        if (shippingNote) text += `${shippingNote}\n`;
-        text += `--------------------\n`;
-        text += `總計金額：NT$ ${totalTwdVal}\n`;
+          });
+          if (shippingNote) text += `${shippingNote}\n`;
+          text += `--------------------\n`;
+          text += `總計金額：NT$ ${totalTwdVal}\n`;
+        }
+        if (footerText) text += `${footerText}`;
       } else if (tabSource === 3) {
+        // 相卡專屬格式 (還原圖一)
+        const totalCount = photoCardCounts.reduce((a, b) => a + b, 0);
+        const photoHeader = document.getElementById("tplPhotoHeader").value.replace("{TOTAL_COUNT}", totalCount).trim();
+        const photoShipping = document.getElementById("tplPhotoShipping").value.trim();
+        const photoFooter = document.getElementById("tplPhotoFooter").value.trim();
+
+        if (photoHeader) text += `${photoHeader}\n--------------------\n`;
+
         const tierIdx = getTierIndex();
         photoCardDefs.forEach((def, index) => {
           const count = photoCardCounts[index] || 0;
           if (count > 0) {
-            validCount++;
             const unitPrice = def.prices[tierIdx];
             const itemTwd = Math.ceil(count * unitPrice);
-            text += `${validCount}. ${def.name} x${count} ($${itemTwd.toLocaleString()})\n`;
+            text += `▫️ ${def.name}\n   ${unitPrice}元 × ${count}張 = $${itemTwd.toLocaleString()}\n`;
           }
         });
 
-        if (shippingNote) text += `${shippingNote}\n`;
         text += `--------------------\n`;
         const photoTotalTwd = document.getElementById("photoTotalTwd").innerText.replace("NT$", "").trim();
         text += `總計金額：NT$ ${photoTotalTwd}\n`;
+        if (photoShipping) text += `${photoShipping}\n\n`;
+        if (photoFooter) text += `${photoFooter}`;
       }
-
-      if (footerText) text += `${footerText}`;
 
       navigator.clipboard.writeText(text).then(() => {
         document.getElementById(`previewText${tabSource}`).innerText = text;
