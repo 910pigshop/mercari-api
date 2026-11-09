@@ -137,7 +137,7 @@
       </button>
     </div>
 
-    <!-- 相卡報價總結 (對應圖一卡片) -->
+    <!-- 相卡報價總結 -->
     <div id="summaryCardPhoto" class="bg-slate-900 text-white rounded-2xl p-6 shadow-lg mb-6">
       <div class="flex justify-between items-end mb-4 border-b border-slate-800 pb-4">
         <div>
@@ -269,15 +269,15 @@
       </div>
     </div>
 
-    <!-- 2. 相卡階梯報價定義 (對應圖二：左右雙欄精簡版型) -->
+    <!-- 2. 相卡階梯報價定義 -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
       <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">相卡階梯報價定義</h2>
       <div id="photoCardConfigGrid" class="grid grid-cols-2 gap-3"></div>
     </div>
 
-    <!-- 3. 相卡專用報價範本設定 (圖一格式) -->
+    <!-- 3. 相卡專用報價範本設定 -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-      <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">📸 相卡報價範本自訂 (圖一格式)</h2>
+      <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">📸 相卡報價範本自訂</h2>
 
       <div class="space-y-3 font-mono text-xs">
         <div>
@@ -844,7 +844,7 @@
     }
 
 
-    /* ==================== 分頁三：相卡報價邏輯 (對應圖一介面) ==================== */
+    /* ==================== 分頁三：相卡報價邏輯 (支援點擊手輸) ==================== */
     function renderPhotoCardGrid() {
       const grid = document.getElementById("photoCardGrid");
       grid.innerHTML = "";
@@ -862,9 +862,9 @@
             <p class="text-xs font-bold text-slate-800 line-clamp-1">${def.name}</p>
             <p class="text-xs font-bold text-blue-600 mt-0.5">$${unitPrice}</p>
           </div>
-          <div class="flex items-center justify-end gap-1.5">
+          <div class="flex items-center justify-end gap-1">
             <button onclick="changePhotoCardCount(${index}, -1)" class="w-6 h-6 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold flex items-center justify-center text-sm shadow-sm">-</button>
-            <span class="w-7 text-center text-xs font-bold text-slate-800">${count}</span>
+            <input type="number" min="0" value="${count}" oninput="setPhotoCardCountDirect(${index}, this.value)" class="w-9 text-center text-xs font-bold text-slate-800 bg-transparent border-0 outline-none p-0 focus:ring-0 focus:bg-slate-100 rounded">
             <button onclick="changePhotoCardCount(${index}, 1)" class="w-6 h-6 rounded bg-blue-500 hover:bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">+</button>
           </div>
         `;
@@ -878,6 +878,12 @@
     function changePhotoCardCount(index, delta) {
       photoCardCounts[index] = Math.max(0, (photoCardCounts[index] || 0) + delta);
       renderPhotoCardGrid();
+    }
+
+    function setPhotoCardCountDirect(index, val) {
+      const num = parseInt(val, 10);
+      photoCardCounts[index] = !isNaN(num) && num >= 0 ? num : 0;
+      calculatePhotoCards();
     }
 
     function resetPhotoCardCounts() {
@@ -1037,7 +1043,7 @@
     }
 
 
-    /* ==================== 分頁五：相卡階梯設定渲染 (對應圖二：雙欄簡潔版型) ==================== */
+    /* ==================== 分頁五：相卡階梯設定渲染 ==================== */
     function renderPhotoCardConfigGrid() {
       const grid = document.getElementById("photoCardConfigGrid");
       grid.innerHTML = "";
@@ -1047,7 +1053,6 @@
         card.className = "bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-1.5 text-xs";
 
         card.innerHTML = `
-          <!-- 項目名稱可手動修改 -->
           <input type="text" value="${def.name}" onchange="updatePhotoCardConfig(${index}, 'name', this.value)" class="w-full font-bold text-slate-800 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500 text-xs mb-1">
           
           <div class="flex items-center justify-between">
@@ -1144,7 +1149,6 @@
         }
         if (footerText) text += `${footerText}`;
       } else if (tabSource === 3) {
-        // 相卡專屬格式 (還原圖一)
         const totalCount = photoCardCounts.reduce((a, b) => a + b, 0);
         const photoHeader = document.getElementById("tplPhotoHeader").value.replace("{TOTAL_COUNT}", totalCount).trim();
         const photoShipping = document.getElementById("tplPhotoShipping").value.trim();
