@@ -162,7 +162,7 @@
     </div>
   </div>
 
-  <!-- ==================== 分頁四：純數字商品報價 ==================== -->
+  <!-- ==================== 分頁四：純數字商品報價 (左右各6欄階梯 + 底部1欄現地) ==================== -->
   <div id="tab4" class="tab-content hidden">
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-5">
       <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
@@ -170,53 +170,42 @@
           <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-xl">📦</div>
           <div>
             <h1 class="text-xl font-bold text-slate-800">商品報價</h1>
-            <p class="text-xs text-slate-500">快速輸入日幣數字轉換為多種代購模式報價</p>
+            <p class="text-xs text-slate-500">輸入日幣自動套用階梯式報價（左6欄二手 / 右6欄通販 / 下1欄現地）</p>
           </div>
         </div>
-        <button onclick="resetNumberInputs()" class="text-xs text-slate-500 hover:text-red-500 font-semibold underline">重置內容</button>
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">總額：<span id="numTotalJpyBadge" class="text-emerald-600">¥0</span> (<span id="numActiveCountBadge">0</span>件)</span>
+          <button onclick="resetNumberInputs()" class="text-xs text-slate-500 hover:text-red-500 font-semibold underline">重置內容</button>
+        </div>
       </div>
 
+      <!-- 10 個日幣數字輸入框 -->
       <div id="numberInputsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mb-6"></div>
 
-      <div class="space-y-3 border-t border-slate-100 pt-4">
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 font-semibold" id="numLabelUsed">二手商品 (0件)</p>
-            <p class="text-2xl font-extrabold text-slate-800 mt-0.5" id="numValUsed">$0</p>
+      <!-- 階梯式報價卡片區：左邊 6 欄二手商品、右邊 6 欄通販商品 -->
+      <div class="border-t border-slate-100 pt-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <!-- 左側：二手商品 (6欄) -->
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-xs font-extrabold text-amber-600">♻️ 二手商品階梯 (6組)</span>
+              <span class="text-[11px] text-slate-400">依日幣總額自動標示適用級距</span>
+            </div>
+            <div id="usedTiersContainer" class="space-y-2.5"></div>
           </div>
-          <div class="flex items-center gap-3">
-            <span class="text-xs font-bold text-emerald-600" id="numProfitUsed">利潤 +0</span>
-            <button onclick="copyNumberModeQuote('used')" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1">
-              🔍 生成報價
-            </button>
+
+          <!-- 右側：通販商品 (6欄) -->
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-xs font-extrabold text-blue-600">🛍️ 通販商品階梯 (6組)</span>
+              <span class="text-[11px] text-slate-400">依日幣總額自動標示適用級距</span>
+            </div>
+            <div id="shopTiersContainer" class="space-y-2.5"></div>
           </div>
         </div>
 
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 font-semibold" id="numLabelShop">網路通販 (0件)</p>
-            <p class="text-2xl font-extrabold text-slate-800 mt-0.5" id="numValShop">$0</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-xs font-bold text-emerald-600" id="numProfitShop">利潤 +0</span>
-            <button onclick="copyNumberModeQuote('shop')" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1">
-              🔍 生成報價
-            </button>
-          </div>
-        </div>
-
-        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 font-semibold" id="numLabelLocal">現地代購 (0件)</p>
-            <p class="text-2xl font-extrabold text-slate-800 mt-0.5" id="numValLocal">$0</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-xs font-bold text-emerald-600" id="numProfitLocal">利潤 +0</span>
-            <button onclick="copyNumberModeQuote('local')" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1">
-              🔍 生成報價
-            </button>
-          </div>
-        </div>
+        <!-- 最下方：現地代購 (全寬1欄) -->
+        <div id="localTierContainer" class="pt-1"></div>
       </div>
     </div>
 
@@ -228,54 +217,58 @@
 
   <!-- ==================== 分頁五：系統設定 ==================== -->
   <div id="tab5" class="tab-content hidden space-y-5">
-    <!-- 1. 費率與匯率基礎設定 -->
+    <!-- 1. 基礎匯率設定 -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-      <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">⚙️ 基礎費率與匯率設定</h2>
+      <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">⚙️ 基礎匯率設定</h2>
       
-      <div class="space-y-3">
-        <div class="flex items-center justify-between">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
           <label class="text-xs font-semibold text-slate-700">成本匯率</label>
-          <input type="number" id="costRate" value="0.2" step="0.001" oninput="saveAndCalculate()" class="w-28 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
+          <input type="number" id="costRate" value="0.2" step="0.001" oninput="saveAndCalculate()" class="w-28 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 bg-white focus:ring-2 focus:ring-blue-500/20 outline-none">
         </div>
 
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
           <label class="text-xs font-semibold text-slate-700">公告匯率</label>
-          <input type="number" id="rate" value="0.22" step="0.001" oninput="saveAndCalculate()" class="w-28 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
-        </div>
-
-        <div class="flex items-center justify-between">
-          <label class="text-xs font-semibold text-slate-700">二手商品利潤</label>
-          <div class="flex items-center gap-1">
-            <input type="number" id="usedFeePercent" value="17.5" step="0.1" oninput="saveAndCalculate()" class="w-20 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
-            <span class="text-xs text-slate-500 font-bold">%</span>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <label class="text-xs font-semibold text-slate-700">網路通販利潤</label>
-          <div class="flex items-center gap-1">
-            <input type="number" id="shopFeePercent" value="15" step="0.1" oninput="saveAndCalculate()" class="w-20 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
-            <span class="text-xs text-slate-500 font-bold">%</span>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <label class="text-xs font-semibold text-slate-700">現地代購利潤</label>
-          <div class="flex items-center gap-1">
-            <input type="number" id="localFeePercent" value="30" step="0.1" oninput="saveAndCalculate()" class="w-20 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none">
-            <span class="text-xs text-slate-500 font-bold">%</span>
-          </div>
+          <input type="number" id="rate" value="0.22" step="0.001" oninput="saveAndCalculate()" class="w-28 p-1.5 text-right rounded-lg border border-slate-300 text-xs font-bold text-slate-800 bg-white focus:ring-2 focus:ring-blue-500/20 outline-none">
         </div>
       </div>
     </div>
 
-    <!-- 2. 相卡階梯報價定義 -->
+    <!-- 2. 商品階梯報價定義 (左6二手 / 右6通販 / 下1現地，標題與參數皆可編輯) -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-      <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">相卡階梯報價定義</h2>
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+        <h2 class="text-base font-bold text-slate-800">📦 商品階梯報價定義 (標題、門檻與利潤皆可修改)</h2>
+        <button onclick="resetProductTiersDefault()" class="text-xs text-slate-400 hover:text-red-500 underline font-medium">恢復預設階梯</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <!-- 左邊：二手商品 6 組設定 -->
+        <div class="space-y-2.5">
+          <p class="text-xs font-bold text-amber-600">♻️ 二手商品階梯設定 (左6欄)</p>
+          <div id="usedTiersConfigGrid" class="space-y-2.5"></div>
+        </div>
+
+        <!-- 右邊：通販商品 6 組設定 -->
+        <div class="space-y-2.5">
+          <p class="text-xs font-bold text-blue-600">🛍️ 通販商品階梯設定 (右6欄)</p>
+          <div id="shopTiersConfigGrid" class="space-y-2.5"></div>
+        </div>
+      </div>
+
+      <!-- 下方：現地代購 1 組設定 -->
+      <div class="border-t border-slate-100 pt-3">
+        <p class="text-xs font-bold text-emerald-600 mb-2">🏃 現地代購設定 (下方全寬1欄)</p>
+        <div id="localTierConfigGrid"></div>
+      </div>
+    </div>
+
+    <!-- 3. 相卡階梯報價定義 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">📷 相卡階梯報價定義</h2>
       <div id="photoCardConfigGrid" class="grid grid-cols-2 gap-3"></div>
     </div>
 
-    <!-- 3. 相卡專用報價範本設定 -->
+    <!-- 4. 相卡專用報價範本設定 -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
       <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">📸 相卡報價範本自訂</h2>
 
@@ -297,7 +290,7 @@
       </div>
     </div>
 
-    <!-- 4. 通用商品報價複製範本自訂 -->
+    <!-- 5. 通用商品報價複製範本自訂 -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
       <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b border-slate-100">📝 通用商品報價複製範本自訂</h2>
 
@@ -351,6 +344,29 @@
     let generalManualItems = [];    // 分頁二：通用手輸商品
     let numberItems = Array(10).fill(0); // 分頁四：10個數字商品欄位
 
+    // 預設商品階梯報價定義 (左6二手 + 右6通販 + 下1現地)
+    const DEFAULT_PRODUCT_TIERS = {
+      used: [
+        { title: "二手商品 (基礎)", minJpy: 0, feePercent: 20 },
+        { title: "二手商品 (滿¥3,000)", minJpy: 3000, feePercent: 18 },
+        { title: "二手商品 (滿¥5,000)", minJpy: 5000, feePercent: 17.5 },
+        { title: "二手商品 (滿¥10,000)", minJpy: 10000, feePercent: 16 },
+        { title: "二手商品 (滿¥20,000)", minJpy: 20000, feePercent: 15 },
+        { title: "二手商品 (滿¥30,000)", minJpy: 30000, feePercent: 13 }
+      ],
+      shop: [
+        { title: "網路通販 (基礎)", minJpy: 0, feePercent: 18 },
+        { title: "網路通販 (滿¥3,000)", minJpy: 3000, feePercent: 16 },
+        { title: "網路通販 (滿¥5,000)", minJpy: 5000, feePercent: 15 },
+        { title: "網路通販 (滿¥10,000)", minJpy: 10000, feePercent: 14 },
+        { title: "網路通販 (滿¥20,000)", minJpy: 20000, feePercent: 12.5 },
+        { title: "網路通販 (滿¥30,000)", minJpy: 30000, feePercent: 11 }
+      ],
+      local: { title: "現地代購", minJpy: 0, feePercent: 30 }
+    };
+
+    let productTiers = JSON.parse(JSON.stringify(DEFAULT_PRODUCT_TIERS));
+
     let photoCardDefs = [
       { id: "lawson_l", name: "Lawson/全家--L判", jpyCost: 30, prices: [15, 14, 13.5] },
       { id: "seven_l", name: "7-11--L判", jpyCost: 40, prices: [18, 17, 16.5] },
@@ -379,10 +395,10 @@
 
     window.addEventListener("DOMContentLoaded", () => {
       loadSettings();
-      fetchRealtimeRate();
       addGeneralManualItem();
       renderPhotoCardGrid();
       renderNumberInputsGrid();
+      renderProductTiersConfig();
       renderPhotoCardConfigGrid();
     });
 
@@ -399,9 +415,7 @@
     function loadSettings() {
       const savedRate = localStorage.getItem("mercari_rate");
       const savedCostRate = localStorage.getItem("mercari_cost_rate");
-      const savedUsedFee = localStorage.getItem("mercari_used_fee");
-      const savedShopFee = localStorage.getItem("mercari_shop_fee");
-      const savedLocalFee = localStorage.getItem("mercari_local_fee");
+      const savedProductTiers = localStorage.getItem("mercari_product_tiers");
       const savedHeader = localStorage.getItem("mercari_tpl_header");
       const savedShipping = localStorage.getItem("mercari_tpl_shipping");
       const savedFooter = localStorage.getItem("mercari_tpl_footer");
@@ -413,9 +427,15 @@
 
       if (savedRate !== null) document.getElementById("rate").value = savedRate;
       if (savedCostRate !== null) document.getElementById("costRate").value = savedCostRate;
-      if (savedUsedFee !== null) document.getElementById("usedFeePercent").value = savedUsedFee;
-      if (savedShopFee !== null) document.getElementById("shopFeePercent").value = savedShopFee;
-      if (savedLocalFee !== null) document.getElementById("localFeePercent").value = savedLocalFee;
+
+      if (savedProductTiers !== null) {
+        try {
+          const parsed = JSON.parse(savedProductTiers);
+          if (parsed && Array.isArray(parsed.used) && parsed.used.length === 6 && Array.isArray(parsed.shop) && parsed.shop.length === 6 && parsed.local) {
+            productTiers = parsed;
+          }
+        } catch (e) {}
+      }
       
       if (savedPhotoDefs !== null) {
         try {
@@ -438,9 +458,7 @@
     function saveSettingsOnly() {
       localStorage.setItem("mercari_rate", document.getElementById("rate").value);
       localStorage.setItem("mercari_cost_rate", document.getElementById("costRate").value);
-      localStorage.setItem("mercari_used_fee", document.getElementById("usedFeePercent").value);
-      localStorage.setItem("mercari_shop_fee", document.getElementById("shopFeePercent").value);
-      localStorage.setItem("mercari_local_fee", document.getElementById("localFeePercent").value);
+      localStorage.setItem("mercari_product_tiers", JSON.stringify(productTiers));
       localStorage.setItem("mercari_tpl_header", document.getElementById("tplHeader").value);
       localStorage.setItem("mercari_tpl_shipping", document.getElementById("tplShippingNote").value);
       localStorage.setItem("mercari_tpl_footer", document.getElementById("tplFooter").value);
@@ -461,24 +479,19 @@
       calculateNumberTotal();
     }
 
-    async function fetchRealtimeRate() {
-      const display = document.getElementById("realtimeRateDisplay");
-      if (!display) return;
-      display.innerText = "讀取中...";
-      try {
-        const res = await fetch("https://open.er-api.com/v6/latest/JPY");
-        if (res.ok) {
-          const data = await res.json();
-          const twdRate = data?.rates?.TWD;
-          if (twdRate) {
-            display.innerText = `1 JPY ≈ ${twdRate.toFixed(4)} TWD`;
-            return;
-          }
+    // 依日幣總金額尋找最匹配的階梯 index (0~5)
+    function getMatchedTierIndex(category, totalJpy) {
+      const list = productTiers[category];
+      let matchedIdx = 0;
+      let highestMin = -1;
+      list.forEach((tier, idx) => {
+        const min = parseFloat(tier.minJpy) || 0;
+        if (totalJpy >= min && min >= highestMin) {
+          highestMin = min;
+          matchedIdx = idx;
         }
-        display.innerText = "無法取得即時匯率";
-      } catch (e) {
-        display.innerText = "無法取得即時匯率";
-      }
+      });
+      return matchedIdx;
     }
 
     function adjustRoundPrice(val) {
@@ -493,16 +506,27 @@
       return rounded;
     }
 
-    function calculateSingleTwd(jpyPrice, type = 'used') {
+    // 依指定利潤百分比計算單件台幣報價
+    function calculateTwdByFeePercent(jpyPrice, feePercent) {
       if (!jpyPrice || jpyPrice <= 0) return 0;
       const rate = parseFloat(document.getElementById("rate").value) || 0;
-      let feePercent = 17.5;
-      if (type === 'shop') feePercent = parseFloat(document.getElementById("shopFeePercent").value) || 0;
-      else if (type === 'local') feePercent = parseFloat(document.getElementById("localFeePercent").value) || 0;
-      else feePercent = parseFloat(document.getElementById("usedFeePercent").value) || 0;
-
-      const rawTwd = jpyPrice * rate * (1 + feePercent / 100);
+      const rawTwd = jpyPrice * rate * (1 + (parseFloat(feePercent) || 0) / 100);
       return adjustRoundPrice(rawTwd);
+    }
+
+    // 計算單件台幣（自動帶入該總額所屬階梯費率）
+    function calculateSingleTwd(jpyPrice, type = 'used', contextTotalJpy = null) {
+      if (!jpyPrice || jpyPrice <= 0) return 0;
+      const targetTotal = contextTotalJpy !== null ? contextTotalJpy : jpyPrice;
+      let feePercent = 0;
+      if (type === 'local') {
+        feePercent = parseFloat(productTiers.local.feePercent) || 0;
+      } else {
+        const cat = type === 'shop' ? 'shop' : 'used';
+        const idx = getMatchedTierIndex(cat, targetTotal);
+        feePercent = parseFloat(productTiers[cat][idx].feePercent) || 0;
+      }
+      return calculateTwdByFeePercent(jpyPrice, feePercent);
     }
 
     function calculateSingleProfit(jpyPrice, twdPrice) {
@@ -574,16 +598,21 @@
       }
     }
 
+    function getMercariTotalJpy() {
+      return fetchedItems.reduce((sum, item) => sum + (item.price > 0 ? item.price : 0), 0);
+    }
+
     function renderItems() {
       const list = document.getElementById("resultsList");
       list.innerHTML = "";
+      const totalJpy = getMercariTotalJpy();
 
       fetchedItems.forEach((item, index) => {
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative";
 
         if (!item.success) {
-          const singleTwd = calculateSingleTwd(item.price, 'used');
+          const singleTwd = calculateSingleTwd(item.price, 'used', totalJpy);
           const singleProfit = calculateSingleProfit(item.price, singleTwd);
           
           card.innerHTML = `
@@ -629,7 +658,7 @@
             ? `<span class="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">⚠️ 不含送料 (着払い / 買家負擔運費)</span>` 
             : `<span class="inline-block bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-md mb-2">✅ 送料込み (賣家負擔運費)</span>`;
 
-          const singleTwd = calculateSingleTwd(item.price, 'used');
+          const singleTwd = calculateSingleTwd(item.price, 'used', totalJpy);
           const singleProfit = calculateSingleProfit(item.price, singleTwd);
           const displayJpUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url;
 
@@ -677,16 +706,17 @@
       fetchedItems[index].price = (!isNaN(price) && price >= 0) ? price : 0;
       calculateTotal();
       
-      const cardEl = document.querySelectorAll("#resultsList > div")[index];
-      if (cardEl) {
+      const totalJpy = getMercariTotalJpy();
+      document.querySelectorAll("#resultsList > div").forEach((cardEl, idx) => {
         const singleTwdEl = cardEl.querySelector(".single-twd-display");
         const singleProfitEl = cardEl.querySelector(".single-profit-display");
-        const singleTwd = calculateSingleTwd(fetchedItems[index].price, 'used');
-        const singleProfit = calculateSingleProfit(fetchedItems[index].price, singleTwd);
-
-        if (singleTwdEl) singleTwdEl.innerText = `NT$ ${singleTwd.toLocaleString()}`;
-        if (singleProfitEl) singleProfitEl.innerText = `(獲利 +${singleProfit})`;
-      }
+        if (singleTwdEl) {
+          const singleTwd = calculateSingleTwd(fetchedItems[idx].price, 'used', totalJpy);
+          const singleProfit = calculateSingleProfit(fetchedItems[idx].price, singleTwd);
+          singleTwdEl.innerText = `NT$ ${singleTwd.toLocaleString()}`;
+          if (singleProfitEl) singleProfitEl.innerText = `(獲利 +${singleProfit})`;
+        }
+      });
     }
 
     function updateManualUrl(index, val) {
@@ -694,14 +724,13 @@
     }
 
     function calculateTotal() {
-      let totalJpy = 0;
+      const totalJpy = getMercariTotalJpy();
       let totalTwdSum = 0;
       let totalProfitSum = 0;
 
       fetchedItems.forEach(item => {
         if (item.price && item.price > 0) {
-          totalJpy += item.price;
-          const twd = calculateSingleTwd(item.price, 'used');
+          const twd = calculateSingleTwd(item.price, 'used', totalJpy);
           totalTwdSum += twd;
           totalProfitSum += calculateSingleProfit(item.price, twd);
         }
@@ -742,21 +771,26 @@
       generalManualItems[index].title = val.trim();
     }
 
+    function getGeneralTotalJpy() {
+      return generalManualItems.reduce((sum, item) => sum + (item.price > 0 ? item.price : 0), 0);
+    }
+
     function updateGeneralPrice(index, val) {
       const price = parseInt(val, 10);
       generalManualItems[index].price = (!isNaN(price) && price >= 0) ? price : 0;
       calculateGeneralTotal();
 
-      const cardEl = document.querySelectorAll("#generalManualList > div")[index];
-      if (cardEl) {
+      const totalJpy = getGeneralTotalJpy();
+      document.querySelectorAll("#generalManualList > div").forEach((cardEl, idx) => {
         const singleTwdEl = cardEl.querySelector(".general-single-twd");
         const singleProfitEl = cardEl.querySelector(".general-single-profit");
-        const singleTwd = calculateSingleTwd(generalManualItems[index].price, generalManualItems[index].type);
-        const singleProfit = calculateSingleProfit(generalManualItems[index].price, singleTwd);
-
-        if (singleTwdEl) singleTwdEl.innerText = `NT$ ${singleTwd.toLocaleString()}`;
-        if (singleProfitEl) singleProfitEl.innerText = `(獲利 +${singleProfit})`;
-      }
+        if (singleTwdEl) {
+          const singleTwd = calculateSingleTwd(generalManualItems[idx].price, generalManualItems[idx].type, totalJpy);
+          const singleProfit = calculateSingleProfit(generalManualItems[idx].price, singleTwd);
+          singleTwdEl.innerText = `NT$ ${singleTwd.toLocaleString()}`;
+          if (singleProfitEl) singleProfitEl.innerText = `(獲利 +${singleProfit})`;
+        }
+      });
     }
 
     function updateGeneralUrl(index, val) {
@@ -766,12 +800,13 @@
     function renderGeneralManualItems() {
       const list = document.getElementById("generalManualList");
       list.innerHTML = "";
+      const totalJpy = getGeneralTotalJpy();
 
       generalManualItems.forEach((item, index) => {
         const card = document.createElement("div");
         card.className = "bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative space-y-3";
 
-        const singleTwd = calculateSingleTwd(item.price, item.type);
+        const singleTwd = calculateSingleTwd(item.price, item.type, totalJpy);
         const singleProfit = calculateSingleProfit(item.price, singleTwd);
 
         const shopActiveBtn = item.type === 'shop' ? `bg-blue-500 text-white font-bold shadow-sm` : `bg-slate-100 text-slate-600 hover:bg-slate-200`;
@@ -825,14 +860,13 @@
     }
 
     function calculateGeneralTotal() {
-      let totalJpy = 0;
+      const totalJpy = getGeneralTotalJpy();
       let totalTwdSum = 0;
       let totalProfitSum = 0;
 
       generalManualItems.forEach(item => {
         if (item.price && item.price > 0) {
-          totalJpy += item.price;
-          const twd = calculateSingleTwd(item.price, item.type);
+          const twd = calculateSingleTwd(item.price, item.type, totalJpy);
           totalTwdSum += twd;
           totalProfitSum += calculateSingleProfit(item.price, twd);
         }
@@ -844,7 +878,7 @@
     }
 
 
-    /* ==================== 分頁三：相卡報價邏輯 (支援點擊手輸) ==================== */
+    /* ==================== 分頁三：相卡報價邏輯 ==================== */
     function renderPhotoCardGrid() {
       const grid = document.getElementById("photoCardGrid");
       grid.innerHTML = "";
@@ -944,7 +978,7 @@
     }
 
 
-    /* ==================== 分頁四：純數字商品報價 ==================== */
+    /* ==================== 分頁四：純數字商品報價 (左右6欄階梯 + 下1欄現地) ==================== */
     function renderNumberInputsGrid() {
       const grid = document.getElementById("numberInputsGrid");
       grid.innerHTML = "";
@@ -955,7 +989,7 @@
 
         card.innerHTML = `
           <span class="text-xs font-bold text-slate-400 w-6">${index + 1}.</span>
-          <input type="number" value="${val || ''}" placeholder="0" oninput="updateNumberItem(${index}, this.value)" class="w-full max-w-[200px] text-right py-1 px-3 text-sm font-bold rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800">
+          <input type="number" value="${val || ''}" placeholder="0" oninput="updateNumberItem(${index}, this.value)" class="w-full max-w-[220px] text-right py-1.5 px-3 text-sm font-bold rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800">
         `;
         grid.appendChild(card);
       });
@@ -986,34 +1020,120 @@
         }
       });
 
+      document.getElementById("numTotalJpyBadge").innerText = `¥${totalJpy.toLocaleString()}`;
+      document.getElementById("numActiveCountBadge").innerText = activeCount;
+
       const costRate = parseFloat(document.getElementById("costRate").value) || 0.2;
+      const totalCostTwd = Math.round(totalJpy * costRate);
 
-      // 二手商品
-      const twdUsed = calculateSingleTwd(totalJpy, 'used');
-      const profitUsed = twdUsed - Math.round(totalJpy * costRate);
-      document.getElementById("numLabelUsed").innerText = `二手商品 (${activeCount}件)`;
-      document.getElementById("numValUsed").innerText = `$${twdUsed.toLocaleString()}`;
-      document.getElementById("numProfitUsed").innerText = `利潤 +${profitUsed}`;
+      const activeUsedIdx = totalJpy > 0 ? getMatchedTierIndex('used', totalJpy) : -1;
+      const activeShopIdx = totalJpy > 0 ? getMatchedTierIndex('shop', totalJpy) : -1;
 
-      // 網路通販
-      const twdShop = calculateSingleTwd(totalJpy, 'shop');
-      const profitShop = twdShop - Math.round(totalJpy * costRate);
-      document.getElementById("numLabelShop").innerText = `網路通販 (${activeCount}件)`;
-      document.getElementById("numValShop").innerText = `$${twdShop.toLocaleString()}`;
-      document.getElementById("numProfitShop").innerText = `利潤 +${profitShop}`;
+      // 渲染左邊 6 欄：二手商品
+      const usedContainer = document.getElementById("usedTiersContainer");
+      usedContainer.innerHTML = "";
+      productTiers.used.forEach((tier, idx) => {
+        let sumTwd = 0;
+        numberItems.forEach(val => {
+          if (val > 0) sumTwd += calculateTwdByFeePercent(val, tier.feePercent);
+        });
+        const profit = sumTwd - totalCostTwd;
+        const isMatched = idx === activeUsedIdx;
 
-      // 現地代購
-      const twdLocal = calculateSingleTwd(totalJpy, 'local');
-      const profitLocal = twdLocal - Math.round(totalJpy * costRate);
-      document.getElementById("numLabelLocal").innerText = `現地代購 (${activeCount}件)`;
-      document.getElementById("numValLocal").innerText = `$${twdLocal.toLocaleString()}`;
-      document.getElementById("numProfitLocal").innerText = `利潤 +${profitLocal}`;
+        const card = document.createElement("div");
+        card.className = isMatched
+          ? "bg-amber-50/70 p-3.5 rounded-xl border-2 border-amber-400 flex items-center justify-between shadow-sm transition"
+          : "bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between transition";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <p class="text-xs text-slate-700 font-bold">${tier.title}</p>
+              <span class="text-[10px] text-slate-400">(${tier.feePercent}%)</span>
+              ${isMatched ? `<span class="text-[10px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded">✨ 適用級距</span>` : ``}
+            </div>
+            <p class="text-xl font-extrabold text-slate-800 mt-0.5">$${sumTwd.toLocaleString()}</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="text-xs font-bold text-emerald-600">利潤 +${profit}</span>
+            <button onclick="copyNumberTierQuote('used', ${idx})" class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg transition shadow-sm whitespace-nowrap">
+              🔍 生成報價
+            </button>
+          </div>
+        `;
+        usedContainer.appendChild(card);
+      });
+
+      // 渲染右邊 6 欄：通販商品
+      const shopContainer = document.getElementById("shopTiersContainer");
+      shopContainer.innerHTML = "";
+      productTiers.shop.forEach((tier, idx) => {
+        let sumTwd = 0;
+        numberItems.forEach(val => {
+          if (val > 0) sumTwd += calculateTwdByFeePercent(val, tier.feePercent);
+        });
+        const profit = sumTwd - totalCostTwd;
+        const isMatched = idx === activeShopIdx;
+
+        const card = document.createElement("div");
+        card.className = isMatched
+          ? "bg-blue-50/70 p-3.5 rounded-xl border-2 border-blue-400 flex items-center justify-between shadow-sm transition"
+          : "bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between transition";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <p class="text-xs text-slate-700 font-bold">${tier.title}</p>
+              <span class="text-[10px] text-slate-400">(${tier.feePercent}%)</span>
+              ${isMatched ? `<span class="text-[10px] font-bold bg-blue-500 text-white px-1.5 py-0.5 rounded">✨ 適用級距</span>` : ``}
+            </div>
+            <p class="text-xl font-extrabold text-slate-800 mt-0.5">$${sumTwd.toLocaleString()}</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="text-xs font-bold text-emerald-600">利潤 +${profit}</span>
+            <button onclick="copyNumberTierQuote('shop', ${idx})" class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg transition shadow-sm whitespace-nowrap">
+              🔍 生成報價
+            </button>
+          </div>
+        `;
+        shopContainer.appendChild(card);
+      });
+
+      // 渲染最下方全寬 1 欄：現地代購
+      const localContainer = document.getElementById("localTierContainer");
+      let localSumTwd = 0;
+      numberItems.forEach(val => {
+        if (val > 0) localSumTwd += calculateTwdByFeePercent(val, productTiers.local.feePercent);
+      });
+      const localProfit = localSumTwd - totalCostTwd;
+
+      localContainer.innerHTML = `
+        <div class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <p class="text-xs text-slate-700 font-bold">🏃 ${productTiers.local.title} (${activeCount}件)</p>
+              <span class="text-[10px] text-slate-500">(${productTiers.local.feePercent}%)</span>
+            </div>
+            <p class="text-2xl font-extrabold text-slate-800 mt-0.5">$${localSumTwd.toLocaleString()}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold text-emerald-600">利潤 +${localProfit}</span>
+            <button onclick="copyNumberTierQuote('local', 0)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1">
+              🔍 生成報價
+            </button>
+          </div>
+        </div>
+      `;
     }
 
-    function copyNumberModeQuote(mode) {
+    function copyNumberTierQuote(category, tierIdx) {
       const headerText = document.getElementById("tplHeader").value.trim();
       const shippingNote = document.getElementById("tplShippingNote").value.trim();
       const footerText = document.getElementById("tplFooter").value.trim();
+
+      const feePercent = category === 'local'
+        ? productTiers.local.feePercent
+        : productTiers[category][tierIdx].feePercent;
 
       let text = "";
       if (headerText) text += `${headerText}\n--------------------\n`;
@@ -1021,10 +1141,10 @@
       let validCount = 0;
       let modeTotalTwd = 0;
 
-      numberItems.forEach((val, index) => {
+      numberItems.forEach((val) => {
         if (val > 0) {
           validCount++;
-          const singleTwd = calculateSingleTwd(val, mode);
+          const singleTwd = calculateTwdByFeePercent(val, feePercent);
           modeTotalTwd += singleTwd;
           text += `${validCount}. ($${singleTwd.toLocaleString()})\n`;
         }
@@ -1040,6 +1160,93 @@
         document.getElementById("previewBox4").classList.remove("hidden");
         alert("報價文字已成功複製到剪貼簿！");
       });
+    }
+
+
+    /* ==================== 分頁五：商品階梯報價設定渲染 ==================== */
+    function renderProductTiersConfig() {
+      // 左邊 6 組：二手商品
+      const usedGrid = document.getElementById("usedTiersConfigGrid");
+      usedGrid.innerHTML = "";
+      productTiers.used.forEach((tier, idx) => {
+        const card = document.createElement("div");
+        card.className = "bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 text-xs";
+        card.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-bold text-amber-600 w-5">#${idx + 1}</span>
+            <input type="text" value="${tier.title}" oninput="updateProductTier('used', ${idx}, 'title', this.value)" class="w-full font-bold text-slate-800 bg-white px-2 py-1 rounded-lg border border-slate-300 text-xs outline-none focus:border-amber-500">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-slate-200">
+              <span class="text-[11px] text-slate-500">滿額¥</span>
+              <input type="number" value="${tier.minJpy}" oninput="updateProductTier('used', ${idx}, 'minJpy', this.value)" class="w-16 text-right font-bold text-slate-800 text-xs outline-none">
+            </div>
+            <div class="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-slate-200">
+              <span class="text-[11px] text-slate-500">利潤%</span>
+              <input type="number" step="0.1" value="${tier.feePercent}" oninput="updateProductTier('used', ${idx}, 'feePercent', this.value)" class="w-14 text-right font-bold text-amber-600 text-xs outline-none">
+            </div>
+          </div>
+        `;
+        usedGrid.appendChild(card);
+      });
+
+      // 右邊 6 組：通販商品
+      const shopGrid = document.getElementById("shopTiersConfigGrid");
+      shopGrid.innerHTML = "";
+      productTiers.shop.forEach((tier, idx) => {
+        const card = document.createElement("div");
+        card.className = "bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 text-xs";
+        card.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-bold text-blue-600 w-5">#${idx + 1}</span>
+            <input type="text" value="${tier.title}" oninput="updateProductTier('shop', ${idx}, 'title', this.value)" class="w-full font-bold text-slate-800 bg-white px-2 py-1 rounded-lg border border-slate-300 text-xs outline-none focus:border-blue-500">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-slate-200">
+              <span class="text-[11px] text-slate-500">滿額¥</span>
+              <input type="number" value="${tier.minJpy}" oninput="updateProductTier('shop', ${idx}, 'minJpy', this.value)" class="w-16 text-right font-bold text-slate-800 text-xs outline-none">
+            </div>
+            <div class="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-slate-200">
+              <span class="text-[11px] text-slate-500">利潤%</span>
+              <input type="number" step="0.1" value="${tier.feePercent}" oninput="updateProductTier('shop', ${idx}, 'feePercent', this.value)" class="w-14 text-right font-bold text-blue-600 text-xs outline-none">
+            </div>
+          </div>
+        `;
+        shopGrid.appendChild(card);
+      });
+
+      // 下方 1 組：現地代購
+      const localGrid = document.getElementById("localTierConfigGrid");
+      localGrid.innerHTML = `
+        <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-200 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-slate-500 font-semibold whitespace-nowrap">報價標題:</span>
+            <input type="text" value="${productTiers.local.title}" oninput="updateProductTier('local', 0, 'title', this.value)" class="w-full font-bold text-slate-800 bg-white px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs outline-none focus:border-emerald-500">
+          </div>
+          <div class="flex items-center justify-between bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+            <span class="text-slate-500 font-semibold">現地代購利潤 (%)</span>
+            <input type="number" step="0.1" value="${productTiers.local.feePercent}" oninput="updateProductTier('local', 0, 'feePercent', this.value)" class="w-20 text-right font-bold text-emerald-600 text-xs outline-none">
+          </div>
+        </div>
+      `;
+    }
+
+    function updateProductTier(category, idx, key, val) {
+      if (category === 'local') {
+        if (key === 'title') productTiers.local.title = val;
+        else productTiers.local[key] = parseFloat(val) || 0;
+      } else {
+        if (key === 'title') productTiers[category][idx].title = val;
+        else productTiers[category][idx][key] = parseFloat(val) || 0;
+      }
+      saveAndCalculate();
+    }
+
+    function resetProductTiersDefault() {
+      if (!confirm("確定要將所有商品階梯標題與參數恢復為預設值嗎？")) return;
+      productTiers = JSON.parse(JSON.stringify(DEFAULT_PRODUCT_TIERS));
+      renderProductTiersConfig();
+      saveAndCalculate();
     }
 
 
@@ -1110,6 +1317,7 @@
         let validCount = 0;
 
         if (tabSource === 1) {
+          const totalJpy = getMercariTotalJpy();
           const totalTwdVal = document.getElementById("totalTwd").innerText.replace("NT$", "").trim();
           fetchedItems.forEach((item, i) => {
             const itemPrice = item.price || 0;
@@ -1118,7 +1326,7 @@
               const title = item.manualTitle || item.title || `商品 (${i + 1})`;
               const rawUrl = item.manualJpUrl || item.jpUrl || item.originalUrl || item.url || "";
               const displayUrl = rawUrl.trim();
-              const singleTwd = calculateSingleTwd(itemPrice, 'used');
+              const singleTwd = calculateSingleTwd(itemPrice, 'used', totalJpy);
 
               text += `${validCount}. ${title} ($${singleTwd.toLocaleString()})\n`;
               if (displayUrl !== "") text += `   ${displayUrl}\n`;
@@ -1128,12 +1336,13 @@
           text += `--------------------\n`;
           text += `總計金額：NT$ ${totalTwdVal}\n`;
         } else if (tabSource === 2) {
+          const totalJpy = getGeneralTotalJpy();
           const totalTwdVal = document.getElementById("totalTwdGeneral").innerText.replace("NT$", "").trim();
           generalManualItems.forEach((item) => {
             const itemPrice = item.price || 0;
             if (itemPrice > 0) {
               validCount++;
-              const singleTwd = calculateSingleTwd(itemPrice, item.type || 'shop');
+              const singleTwd = calculateSingleTwd(itemPrice, item.type || 'shop', totalJpy);
               const title = (item.title || "").trim();
               const displayUrl = (item.url || "").trim();
 
